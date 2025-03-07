@@ -12,4 +12,4 @@ members = [
     "constant_tracking",
     "code_producers",
     "dag"
-]
+, "cfg_ssa"]
