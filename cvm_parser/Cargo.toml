@@ -1,0 +1,8 @@
+[package]
+name = "cvm_parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cfg_ssa = { path = "../cfg_ssa" }
+nom = "8.0.0"

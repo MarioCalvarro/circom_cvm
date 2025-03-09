@@ -12,5 +12,6 @@ members = [
     "constant_tracking",
     "code_producers",
     "dag",
-    "cfg_ssa"
+    "cfg_ssa",
+    "cvm_parser"
 ]
