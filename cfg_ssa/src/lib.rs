@@ -1,13 +1,12 @@
 use std::collections::HashSet;
 
-//TODO: Change string for another more explicit type?
-type OperandID = String;
-
+#[derive(Clone)]
 pub enum NumericType {
     Integer,
     FiniteField,
 }
 
+#[derive(Clone)]
 pub enum Operator {
     //Arithmetic
     Add,
@@ -46,16 +45,33 @@ pub enum Operator {
     //Memory
     Load,
     Store,
+
+    //Signal
+    GetSignal,
+    GetCmpSignal,
+    SetSignal,
+    SetCmpSignal,
+    SetCmpIn,
+    SetCmpInCnt,
+    SetCmpInRun,
+    SetCmpInCntCheck,
 }
 
-pub enum Expression {
+#[derive(Clone)]
+pub enum Operand {
     Constant(i64),
     Variable(String),
-    //The last operand is optional because some operations do not have a second operand
-    Operation(NumericType, Operator, OperandID, Option<OperandID>),
-    SignalOperation(Operator, OperandID, Option<OperandID>, Option<OperandID>),
 }
 
+#[derive(Clone)]
+pub enum Expression {
+    Atomic(Operand),
+    //The last operand is optional because some operations do not have a second operand
+    Operation(NumericType, Operator, Operand, Option<Operand>),
+    SignalOperation(Operator, Operand, Option<Operand>, Option<Operand>),
+}
+
+#[derive(Clone)]
 pub enum Instruction {
     //If the first String, the variable, is None, the return value of the expresion is not saved
     Assignment(Option<String>, Expression),
@@ -67,6 +83,14 @@ pub enum Instruction {
     End,
     Return,
     Error(i64),   //TODO: Possible error codes?
+    //TODO: Cambiar Intrucciones iniciales?
+    Prime(String),
+    Signals(usize),
+    Heap(usize),
+    Start(String),
+    Components(String),
+    Witness(Vec<usize>),
+    Template(Vec<String>),
 }
 
 #[derive(Default)]
