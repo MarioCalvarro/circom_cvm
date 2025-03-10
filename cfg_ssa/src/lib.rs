@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+type Stack<T> = Vec<T>;
+
 #[derive(Clone)]
 pub enum NumericType {
     Integer,
@@ -125,6 +127,7 @@ impl Edge {
 pub struct BasicBlock {
     id: usize,
     instructions: Vec<Instruction>,
+    //TODO: implement the construction of these sets
     predecessors: HashSet<usize>,
     successors: HashSet<usize>,
     is_exit: bool,
@@ -158,11 +161,19 @@ impl BasicBlock {
     }
 }
 
+enum EndType {
+    Conditional,
+    //We save the location of the loop instruction to be able to come back later
+    Loop(usize),
+}
+
 #[derive(Default)]
 pub struct CFG {
     entry: usize,
     blocks: Vec<BasicBlock>,
     adjacency: Vec<Vec<Edge>>,
+    curr: usize,
+    stack_ends: Stack<EndType>,
 }
 
 impl CFG {
@@ -171,6 +182,9 @@ impl CFG {
             entry,
             blocks: Vec::new(),
             adjacency: Vec::new(),
+            //Block 0 is reserved for initial instructions
+            curr: 1,
+            stack_ends: Stack::new(),
         }
     }
 
@@ -179,14 +193,63 @@ impl CFG {
         self.adjacency.push(Vec::new());
     }
 
-    pub fn add_edge(&mut self, from: usize, to: usize, edge_type: EdgeType) {
+    fn add_edge(&mut self, from: usize, to: usize, edge_type: EdgeType) {
         let edge = Edge::new(from, to, edge_type);
         if let Some(edges) = self.adjacency.get_mut(from) {
             edges.push(edge);
         }
     }
 
+    pub fn add_loop_blocks(&mut self) {
+        //The location of the loop is a new block
+        self.stack_ends.push(EndType::Loop(self.adjacency.len()));
+
+        //Block with only loop instruction
+        self.blocks.push(BasicBlock::new(self.adjacency.len()));
+        self.adjacency.push(Vec::new());
+        self.add_edge(self.curr, self.adjacency.len() - 1, EdgeType::Unconditional);
+        self.add_instruction_to_current_block(Instruction::Loop);
+
+        //Block with the code inside the loop
+        self.blocks.push(BasicBlock::new(self.adjacency.len()));
+        self.adjacency.push(Vec::new());
+        self.add_edge(self.adjacency.len() - 2, self.adjacency.len() - 1, EdgeType::Unconditional);
+        self.curr = self.adjacency.len() - 1;
+    }
+
+    pub fn add_if_block(&mut self) {
+        self.stack_ends.push(EndType::Conditional);
+        
+        //Block with the code of the conditional
+        self.blocks.push(BasicBlock::new(self.adjacency.len()));
+        self.adjacency.push(Vec::new());
+        self.add_edge(self.curr, self.adjacency.len() - 1, EdgeType::Unconditional);
+        self.curr = self.adjacency.len() - 1;
+    }
+
+    pub fn add_edge_continue(&mut self) {
+        let mut aux_stack: Stack<EndType> = Stack::new();
+        while let Some(EndType::Conditional) = self.stack_ends.pop() {
+            aux_stack.push(EndType::Conditional);
+        }
+        if let Some(EndType::Loop(loop_block)) = self.stack_ends.pop() {
+            self.add_edge(self.curr, loop_block, EdgeType::Unconditional)
+        }
+        else {
+            //TODO: Improve error handling
+            panic!("continue instruction without expected loop");
+        }
+        //Restore the stack
+        while let Some(end) = aux_stack.pop() {
+            self.stack_ends.push(end);
+        }
+    }
+
     pub fn add_initial_instruction(&mut self, ins: Instruction) {
         self.blocks[0].add_instruction(ins);
+    }
+
+    pub fn add_instruction_to_current_block(&mut self, ins: Instruction) {
+        self.blocks[self.curr].add_instruction(ins);
     }
 }

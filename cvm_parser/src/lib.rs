@@ -187,8 +187,6 @@ fn parse_program(input: &str) -> IResult<&str, CFG> {
     let mut graph = CFG::new(1);
     //Block of initial information
     graph.add_block();
-    //First block of actual code
-    graph.add_block();
 
     //Parse prime
     let (input, prime) = parse_prime(input)?;
@@ -215,31 +213,44 @@ fn parse_program(input: &str) -> IResult<&str, CFG> {
     graph.add_initial_instruction(witness);
     
     //Parse the rest of the program
+    //First block of actual code
+    graph.add_block();
     let mut input = input;
     while let Ok((new_input, ins)) = parse_instruction(input) {
         input = new_input;
         match ins {
             Instruction::Assignment(var, expr) => {
+                //TODO: Crear cadenas def-use, use-def
+                graph.add_instruction_to_current_block(Instruction::Assignment(var, expr));
             },
             Instruction::Expr(expr) => {
+                graph.add_instruction_to_current_block(Instruction::Expr(expr));
             },
             Instruction::Loop => {
+                graph.add_loop_blocks();
             },
             Instruction::Break => {
             },
             Instruction::Continue => {
+                graph.add_edge_continue();
             },
             Instruction::If(expr) => {
+                graph.add_instruction_to_current_block(Instruction::If(expr));
+                graph.add_if_block();
             },
             Instruction::Else => {
             },
             Instruction::End => {
+                //TODO: when exactly do we use this instruction?
             },
             Instruction::Return => {
+                //TODO: when exactly do we use this instruction?
             },
             Instruction::Error(n) => {
+                //TODO: what to do with this
             },
             Instruction::Template(words) => {
+                //TODO: what to do with this
             },
             _ => {
                 panic!("unexpected instruction");
