@@ -122,63 +122,63 @@ fn parse_assignment(input: &str) -> IResult<&str, (String, Expression)> {
     (parse_variable_name, preceded(delimited(space0, tag("="), space0), parse_expression)).parse(input)
 }
 
-fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
+fn parse_instruction(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments,
     alt((
-        map(parse_assignment, |(var, expr)| Instruction::Assignment(var, expr)),
-        map(parse_expression, Instruction::Expr),
-        value(Instruction::Loop, tag("loop")),
-        value(Instruction::Break, tag("break")),
-        value(Instruction::Continue, tag("continue")),
+        value(Statement::Loop, tag("loop")),
+        value(Statement::Break, tag("break")),
+        value(Statement::Continue, tag("continue")),
         map(preceded(tag("if"), preceded(space1, parse_variable_name)),
-            |var: String| Instruction::If(Expression::Atomic(Operand::Variable(var)))),
-        value(Instruction::Else, tag("else")),
-        value(Instruction::Return, tag("return")),
-        map(i64, Instruction::Error),
+            |var: String| Statement::If(Expression::Atomic(Operand::Variable(var)))),
+        value(Statement::Else, tag("else")),
+        value(Statement::Return, tag("return")),
+        map(preceded(tag("error"), preceded(space1, i64)), Statement::Error),
         map(preceded(tag("%%template"), terminated(separated_list1(space1, is_not(" \n")), line_ending)),
-             |words| Instruction::Template(words.into_iter().map(String::from).collect())),
+             |words| Statement::Template(words.into_iter().map(String::from).collect())),
+        map(parse_assignment, |(var, expr)| Statement::Assignment(var, expr)),
+        map(parse_expression, Statement::Expr),
     ))).parse(input)
 }
 
-fn parse_prime(input: &str) -> IResult<&str, Instruction> {
+fn parse_prime(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(preceded(tag("%%prime"), preceded(space1, digit1)),
-            |prime: &str| Instruction::Prime(prime.to_string())))
+            |prime: &str| Statement::Prime(prime.to_string())))
     .parse(input)
 }
 
-fn parse_signals(input: &str) -> IResult<&str, Instruction> {
+fn parse_signals(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(preceded(tag("%%signals"), preceded(space1, usize)),
-            Instruction::Signals))
+            Statement::Signals))
     .parse(input)
 }
 
-fn parse_components_heap(input: &str) -> IResult<&str, Instruction> {
+fn parse_components_heap(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(preceded(tag("%%components_heap"), preceded(space1, usize)),
-            Instruction::Heap))
+            Statement::Heap))
     .parse(input)
 }
 
-fn parse_start(input: &str) -> IResult<&str, Instruction> {
+fn parse_start(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(preceded(tag("%%start"), preceded(space1, parse_variable_name)),
-            Instruction::Start))
+            Statement::Start))
     .parse(input)
 }
 
-fn parse_components(input: &str) -> IResult<&str, Instruction> {
+fn parse_components(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(preceded(tag("%%components"), preceded(space1, parse_component_mode)),
-            Instruction::Components))
+            Statement::Components))
     .parse(input)
 }
 
-fn parse_witness(input: &str) -> IResult<&str, Instruction> {
+fn parse_witness(input: &str) -> IResult<&str, Statement> {
     preceded(parse_empty_line_or_comments, 
         map(separated_list1(space1, usize),
-            Instruction::Witness))
+            Statement::Witness))
     .parse(input)
 }
 
@@ -219,38 +219,47 @@ fn parse_program(input: &str) -> IResult<&str, CFG> {
     while let Ok((new_input, ins)) = parse_instruction(input) {
         input = new_input;
         match ins {
-            Instruction::Assignment(var, expr) => {
+            Statement::Assignment(_, _) => {
                 //TODO: Crear cadenas def-use, use-def
-                graph.add_instruction_to_current_block(Instruction::Assignment(var, expr));
+                graph.add_instruction_to_current_block(ins);
             },
-            Instruction::Expr(expr) => {
-                graph.add_instruction_to_current_block(Instruction::Expr(expr));
+            Statement::Expr(_) => {
+                graph.add_instruction_to_current_block(ins);
             },
-            Instruction::Loop => {
-                graph.add_loop_blocks();
+            Statement::Loop => {
+                graph.add_loop_blocks_and_instruction();
             },
-            Instruction::Break => {
+            Statement::Break => {
+                graph.add_instruction_to_current_block(ins);
+                graph.add_edge_break();
             },
-            Instruction::Continue => {
+            Statement::Continue => {
+                graph.add_instruction_to_current_block(ins);
                 graph.add_edge_continue();
             },
-            Instruction::If(expr) => {
-                graph.add_instruction_to_current_block(Instruction::If(expr));
+            Statement::If(_) => {
+                graph.add_instruction_to_current_block(ins);
                 graph.add_if_block();
             },
-            Instruction::Else => {
+            Statement::Else => {
+                graph.add_else_block();
+                graph.add_instruction_to_current_block(ins);
             },
-            Instruction::End => {
+            Statement::End => {
+                graph.add_instruction_to_current_block(ins);
+                graph.add_edge_end();
+            },
+            Statement::Return => {
                 //TODO: when exactly do we use this instruction?
+                panic!("return instruction not implemented");
             },
-            Instruction::Return => {
-                //TODO: when exactly do we use this instruction?
-            },
-            Instruction::Error(n) => {
+            Statement::Error(_n) => {
                 //TODO: what to do with this
+                panic!("error instruction not implemented");
             },
-            Instruction::Template(words) => {
+            Statement::Template(_words) => {
                 //TODO: what to do with this
+                panic!("template instruction not implemented");
             },
             _ => {
                 panic!("unexpected instruction");
@@ -258,7 +267,5 @@ fn parse_program(input: &str) -> IResult<&str, CFG> {
         }
     }
 
-
-
-    Ok(("", graph))
+    Ok((input, graph))
 }

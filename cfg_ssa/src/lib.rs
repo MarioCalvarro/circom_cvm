@@ -49,7 +49,7 @@ pub enum Operator {
     //Conversions
     Extend,     //i64 → ff
     Wrap,       //ff → i64
-    
+
     //Memory
     Load,
     Store,
@@ -80,7 +80,7 @@ pub enum Expression {
 }
 
 #[derive(Clone)]
-pub enum Instruction {
+pub enum Statement {
     //If the first String, the variable, is None, the return value of the expresion is not saved
     Assignment(String, Expression),
     Expr(Expression),
@@ -126,7 +126,7 @@ impl Edge {
 #[derive(Default)]
 pub struct BasicBlock {
     id: usize,
-    instructions: Vec<Instruction>,
+    instructions: Vec<Statement>,
     //TODO: implement the construction of these sets
     predecessors: HashSet<usize>,
     successors: HashSet<usize>,
@@ -144,7 +144,7 @@ impl BasicBlock {
         }
     }
 
-    pub fn add_instruction(&mut self, instruction: Instruction) {
+    pub fn add_instruction(&mut self, instruction: Statement) {
         self.instructions.push(instruction);
     }
 
@@ -162,9 +162,13 @@ impl BasicBlock {
 }
 
 enum EndType {
-    Conditional,
-    //We save the location of the loop instruction to be able to come back later
-    Loop(usize),
+    //We save the location of the block with the if instruction to create the edge to the else
+    //block later and the location of the merge block to point the conditional branches to it at
+    //the end.
+    Conditional(usize, usize),
+    //We save the location of the loop instruction to be able to come back at the end (or the
+    //continues) and the location of the block after the loop (because of the breaks)
+    Loop(usize, usize),
 }
 
 #[derive(Default)]
@@ -188,8 +192,9 @@ impl CFG {
         }
     }
 
+    //Basic functions
     pub fn add_block(&mut self) {
-        self.blocks.push(BasicBlock::new(self.adjacency.len()));
+        self.blocks.push(BasicBlock::new(self.blocks.len()));
         self.adjacency.push(Vec::new());
     }
 
@@ -200,40 +205,80 @@ impl CFG {
         }
     }
 
-    pub fn add_loop_blocks(&mut self) {
-        //The location of the loop is a new block
-        self.stack_ends.push(EndType::Loop(self.adjacency.len()));
+    pub fn add_initial_instruction(&mut self, ins: Statement) {
+        self.blocks[0].add_instruction(ins);
+    }
 
+    pub fn add_instruction_to_current_block(&mut self, ins: Statement) {
+        self.blocks[self.curr].add_instruction(ins);
+    }
+
+
+    //Functions to construct the cfg properly
+    pub fn add_loop_blocks_and_instruction(&mut self) {
         //Block with only loop instruction
-        self.blocks.push(BasicBlock::new(self.adjacency.len()));
-        self.adjacency.push(Vec::new());
-        self.add_edge(self.curr, self.adjacency.len() - 1, EdgeType::Unconditional);
-        self.add_instruction_to_current_block(Instruction::Loop);
+        self.add_block();
+        self.add_edge(self.curr, self.blocks.len() - 1, EdgeType::Unconditional);
+        self.curr = self.blocks.len() - 1;
+        self.add_instruction_to_current_block(Statement::Loop);
+
+        //The location of block after the loop is new
+        self.add_block();
+        self.stack_ends.push(EndType::Loop(self.curr, self.blocks.len() - 1));
 
         //Block with the code inside the loop
-        self.blocks.push(BasicBlock::new(self.adjacency.len()));
-        self.adjacency.push(Vec::new());
-        self.add_edge(self.adjacency.len() - 2, self.adjacency.len() - 1, EdgeType::Unconditional);
-        self.curr = self.adjacency.len() - 1;
+        self.add_block();
+        self.add_edge(self.curr, self.blocks.len() - 1, EdgeType::Unconditional);
+        self.curr = self.blocks.len() - 1;
     }
 
     pub fn add_if_block(&mut self) {
-        self.stack_ends.push(EndType::Conditional);
-        
+        //Save the block of the if and the merge block
+        self.stack_ends.push(EndType::Conditional(self.curr, self.blocks.len()));
+
+        //Block that merges the branches of the conditional
+        self.add_block();
+
         //Block with the code of the conditional
-        self.blocks.push(BasicBlock::new(self.adjacency.len()));
-        self.adjacency.push(Vec::new());
-        self.add_edge(self.curr, self.adjacency.len() - 1, EdgeType::Unconditional);
-        self.curr = self.adjacency.len() - 1;
+        self.add_block();
+        self.add_edge(self.curr, self.blocks.len() - 1, EdgeType::Conditional);
+        self.curr = self.blocks.len() - 1;
     }
 
-    pub fn add_edge_continue(&mut self) {
-        let mut aux_stack: Stack<EndType> = Stack::new();
-        while let Some(EndType::Conditional) = self.stack_ends.pop() {
-            aux_stack.push(EndType::Conditional);
+    pub fn add_else_block(&mut self) {
+        //New block with the else branch
+        self.add_block();
+
+        //Get the information of the if block
+        if let Some(EndType::Conditional(if_block, merge_block)) = self.stack_ends.last() {
+            let merge_block = *merge_block;
+            let if_block = *if_block;
+
+            //Link the last block of the if branch to the merge block
+            self.add_edge(self.curr, merge_block, EdgeType::Unconditional);
+
+            //Link the if block to the else block
+            self.add_edge(if_block, self.blocks.len() - 1, EdgeType::Unconditional);
+
+            //Restore the stack
+            self.stack_ends.push(EndType::Conditional(if_block, merge_block));
         }
-        if let Some(EndType::Loop(loop_block)) = self.stack_ends.pop() {
-            self.add_edge(self.curr, loop_block, EdgeType::Unconditional)
+        else {
+            //TODO: Improve error handling
+            panic!("an else instruction needs to be between an if and an end instructions");
+        }
+        self.curr = self.blocks.len() - 1;
+    }
+
+    pub fn add_edge_break(&mut self) {
+        let mut aux_stack: Stack<EndType> = Stack::new();
+        while matches!(self.stack_ends.last(), Some(EndType::Conditional(_, _))) {
+            if let Some(EndType::Conditional(a, b)) = self.stack_ends.pop() {
+                aux_stack.push(EndType::Conditional(a, b));
+            }
+        }
+        if let Some(EndType::Loop(_, end_block)) = self.stack_ends.pop() {
+            self.add_edge(self.curr, end_block, EdgeType::Unconditional)
         }
         else {
             //TODO: Improve error handling
@@ -245,11 +290,39 @@ impl CFG {
         }
     }
 
-    pub fn add_initial_instruction(&mut self, ins: Instruction) {
-        self.blocks[0].add_instruction(ins);
+    pub fn add_edge_continue(&mut self) {
+        let mut aux_stack: Stack<EndType> = Stack::new();
+        while matches!(self.stack_ends.last(), Some(EndType::Conditional(_, _))) {
+            if let Some(EndType::Conditional(a, b)) = self.stack_ends.pop() {
+                aux_stack.push(EndType::Conditional(a, b));
+            }
+        }
+        if let Some(EndType::Loop(loop_block, _)) = self.stack_ends.pop() {
+            self.add_edge(self.curr, loop_block, EdgeType::LoopBack)
+        }
+        else {
+            //TODO: Improve error handling
+            panic!("continue instruction without expected loop");
+        }
+        //Restore the stack
+        while let Some(end) = aux_stack.pop() {
+            self.stack_ends.push(end);
+        }
     }
 
-    pub fn add_instruction_to_current_block(&mut self, ins: Instruction) {
-        self.blocks[self.curr].add_instruction(ins);
+    pub fn add_edge_end(&mut self) {
+        match self.stack_ends.pop() {
+            Some(EndType::Conditional(_, merge_block)) => {
+                self.add_edge(self.curr, merge_block, EdgeType::Unconditional);
+            },
+            //TODO: change if the behavior is to go to next block instead of doing another
+            //iteration
+            Some(EndType::Loop(loop_block, _)) => {
+                self.add_edge(self.curr, loop_block, EdgeType::LoopBack);
+            },
+            _ => {
+                panic!("each end must go after an if or a loop")
+            },
+        }
     }
 }
