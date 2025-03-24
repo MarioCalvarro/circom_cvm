@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 cfg_ssa = { path = "../cfg_ssa" }
 nom = "8.0.0"
+num-bigint-dig = "0.8.4"
