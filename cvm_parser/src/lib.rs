@@ -1,7 +1,7 @@
 extern crate num_bigint_dig as num_bigint;
 
 use nom::{
-    branch::alt, bytes::{complete::take_until, tag}, character::{complete::{alpha1, alphanumeric0, alphanumeric1, i64, line_ending, multispace1, satisfy, space0, usize}, streaming::space1}, combinator::{map, opt, recognize, value}, multi::{many0, separated_list0}, sequence::{delimited, pair, preceded, separated_pair}, IResult, Parser
+    branch::alt, bytes::{complete::take_until, tag}, character::{complete::{alpha1, alphanumeric0, alphanumeric1, i64, line_ending, multispace1, none_of, satisfy, space0, usize}, streaming::space1}, combinator::{complete, map, opt, recognize, value}, multi::{many0, separated_list0}, sequence::{delimited, pair, preceded, separated_pair}, IResult, Parser
 };
 use cfg_ssa::types::*;
 use cfg_ssa::ast::*;
@@ -22,13 +22,16 @@ fn parse_variable_name(input: &str) -> IResult<&str, String> {
 }
 
 fn parse_comment(input: &str) -> IResult<&str, ()> {
-    let (input, _) = preceded(tag(";;"), take_until("\n")).parse(input)?;
-    let (input, _) = line_ending.parse(input)?;
+    let (input, _) = preceded(tag(";;"), many0(none_of("\n"))).parse(input)?;
     Ok((input, ()))
 }
 
 fn parse_useless(input: &str) -> IResult<&str, ()> {
-    let (input, _) = opt(many0(alt((parse_comment, map(multispace1, |_| ()))))).parse(input)?;
+    let (input, _) = opt(many0(alt((
+        map(multispace1, |_| ()),
+        complete(parse_comment),
+    ))
+    )).parse(input)?;
     Ok((input, ()))
 }
 
@@ -159,13 +162,13 @@ mod tests {
 
     #[test]
     fn test_parse_comment() {
-        assert_eq!(parse_comment(";; this is a comment\n"), Ok(("", ())));
+        assert_eq!(parse_comment(";; this is a comment\n"), Ok(("\n", ())));
         assert!(parse_comment("this is not a comment").is_err());
     }
 
     #[test]
     fn test_parse_useless() {
-        assert_eq!(parse_useless("   ;; comment\n   "), Ok(("", ())));
+        assert_eq!(parse_useless("   ;; comment\n  ;;lkasjfl\n "), Ok(("", ())));
         assert_eq!(parse_useless("   \n   "), Ok(("", ())));
     }
 
@@ -184,7 +187,8 @@ mod tests {
     #[test]
     fn test_parse_template() {
         let input = "%%template template_name [input1 input2] [output1] [10] [5]\n  ;; body\n  end\n";
-        assert!(parse_template(input).is_ok());
+        let res = parse_template(input);
+        assert!(res.is_ok());
     }
 
     #[test]
