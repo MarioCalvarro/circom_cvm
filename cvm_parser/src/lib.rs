@@ -85,23 +85,22 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     delimited(space0, separated_list0(space1, alphanumeric1), space0), 
     tag("]")).parse(input)?;
     let inputs = inputs.iter().map(|x| x.to_string()).collect();
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
 
     let (input, outputs) = delimited(tag("["),
     delimited(space0, separated_list0(space1, alphanumeric1), space0), 
     tag("]")).parse(input)?;
     let outputs = outputs.iter().map(|x| x.to_string()).collect();
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
 
     let (input, signals) = delimited(tag("["),
     delimited(space0, usize, space0),
     tag("]")).parse(input)?;
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
 
     let (input, components) = delimited(tag("["),
     delimited(space0, usize, space0),
     tag("]")).parse(input)?;
-    let (input, _) = space1(input)?;
 
     let (input, body) = many0(parse_ast_node).parse(input)?;
 
@@ -170,6 +169,7 @@ mod tests {
     fn test_parse_useless() {
         assert_eq!(parse_useless("   ;; comment\n  ;;lkasjfl\n "), Ok(("", ())));
         assert_eq!(parse_useless("   \n   "), Ok(("", ())));
+        assert!(parse_useless("").is_ok());
     }
 
     #[test]

@@ -62,6 +62,7 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
     .parse(input)
 }
 
+//TODO: This is useless, we should parse expressions
 fn parse_two_i64(input: &str) -> IResult<&str, (i64, i64)> {
     delimited(tag("("), separated_pair(i64, delimited(space0, tag(","), space0), i64), tag(")"))
         .parse(input)
