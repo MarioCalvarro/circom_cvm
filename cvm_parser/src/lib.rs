@@ -12,13 +12,6 @@ use initial_parsers::*;
 use operation_parsers::{parse_expression, parse_operation};
 
 fn parse_variable_name(input: &str) -> IResult<&str, String> {
-    // recognize(
-    //     preceded(
-    //         alt((tag("_"), tag("$"), alpha1)),
-    //         alt((alphanumeric0, tag("_")))
-    //     )
-    // ).parse(input)
-    // .map(|(remain, var)| (remain, var.to_string()))
     recognize(
         pair(
             satisfy(|c| c.is_ascii_alphabetic() || c == '_' || c == '$'),
