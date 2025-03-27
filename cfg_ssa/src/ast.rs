@@ -35,7 +35,7 @@ pub struct Template {
 pub enum ASTNode {
     Operation {
         num_type: Option<NumericType>,
-        operator: Operator,
+        operator: Option<Operator>,
         output: Option<String>,
         operands: Vec<Expression>,
     },

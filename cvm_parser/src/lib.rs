@@ -1,9 +1,8 @@
 extern crate num_bigint_dig as num_bigint;
 
 use nom::{
-    branch::alt, bytes::{complete::take_until, tag}, character::{complete::{alpha1, alphanumeric0, alphanumeric1, i64, line_ending, multispace1, none_of, satisfy, space0, usize}, streaming::space1}, combinator::{complete, map, opt, recognize, value}, multi::{many0, separated_list0}, sequence::{delimited, pair, preceded, separated_pair}, IResult, Parser
+    branch::alt, bytes::tag, character::{complete::{alphanumeric1, multispace1, none_of, satisfy, space0, usize}, streaming::space1}, combinator::{complete, map, opt, recognize, value}, multi::{many0, separated_list0}, sequence::{delimited, pair, preceded}, IResult, Parser
 };
-use cfg_ssa::types::*;
 use cfg_ssa::ast::*;
 
 mod initial_parsers;

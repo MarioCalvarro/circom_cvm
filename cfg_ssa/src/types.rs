@@ -61,34 +61,39 @@ pub enum Operator {
 
     //Misc
     Error,
-    //TODO: What is outs ??
+    //TODO: outs
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Atomic {
+    Constant(i64),
+    Variable(String),
 }
 
 //TODO: change to expression
 #[derive(Debug, Clone, PartialEq)]
 pub enum Parameter {
     Signal {
-        index: i64,
-        size: i64,
+        index: Atomic,
+        size: Atomic,
     },
     SubcmpSignal {
-        component: String,
-        index: i64,
-        size: i64,
+        component: Atomic,
+        index: Atomic,
+        size: Atomic,
     },
     I64Memory {
-        index: i64,
-        size: i64,
+        index: Atomic,
+        size: Atomic,
     },
     FfMemory {
-        index: i64,
-        size: i64,
+        index: Atomic,
+        size: Atomic,
     },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Constant(i64),
-    Variable(String),
+    Atomic(Atomic),
     Parameter(Parameter),
 }

@@ -1,6 +1,6 @@
 use cfg_ssa::{
     ast::ASTNode,
-    types::{Expression, NumericType, Operator, Parameter},
+    types::{Expression, NumericType, Operator, Parameter, Atomic},
 };
 use crate::parse_variable_name;
 
@@ -21,6 +21,29 @@ fn parse_numeric_type(input: &str) -> IResult<&str, NumericType> {
 
 fn parse_operator(input: &str) -> IResult<&str, Operator> {
     alt([
+        value(Operator::SetCmpInCntCheck, tag("set_cmp_input_cnt_check")),
+        value(Operator::SetCmpInCnt, tag("set_cmp_input_cnt")),
+        value(Operator::SetCmpInRun, tag("set_cmp_input_run")),
+        value(Operator::SetCmpIn, tag("set_cmp_input")),
+        value(Operator::GetCmpSignal, tag("get_cmp_signal")),
+        value(Operator::SetCmpSignal, tag("set_cmp_signal")),
+        value(Operator::GetSignal, tag("get_signal")),
+        value(Operator::SetSignal, tag("set_signal")),
+
+        value(Operator::Extend, tag("extend_ff")),
+        value(Operator::Wrap, tag("wrap_i64")),
+        value(Operator::Load, tag("load")),
+        value(Operator::Store, tag("store")),
+        value(Operator::Return, tag("return")),
+        value(Operator::Call, tag("call")),
+        value(Operator::Error, tag("error")),
+
+
+        value(Operator::BitAnd, tag("band")),
+        value(Operator::BitOr, tag("bor")),
+        value(Operator::BitXor, tag("bxor")),
+        value(Operator::BitNot, tag("bnot")),
+
         value(Operator::Add, tag("add")),
         value(Operator::Sub, tag("sub")),
         value(Operator::Mul, tag("mul")),
@@ -28,48 +51,37 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
         value(Operator::Rem, tag("rem")),
         value(Operator::IDiv, tag("idiv")),
         value(Operator::Pow, tag("pow")),
+        value(Operator::EqualZero, tag("eqz")),
+        value(Operator::NotEqual, tag("neq")),
+        value(Operator::And, tag("and")),
+        value(Operator::ShiftRight, tag("shr")),
+        value(Operator::ShiftLeft, tag("shl")),
+
         value(Operator::Greater, tag("gt")),
         value(Operator::GreaterEqual, tag("ge")),
         value(Operator::Less, tag("lt")),
         value(Operator::LessEqual, tag("le")),
         value(Operator::Equal, tag("eq")),
-        value(Operator::NotEqual, tag("neq")),
-        value(Operator::EqualZero, tag("eqz")),
-        value(Operator::And, tag("and")),
         value(Operator::Or, tag("or")),
-        value(Operator::ShiftRight, tag("shr")),
-        value(Operator::ShiftLeft, tag("shl")),
-        value(Operator::BitAnd, tag("band")),
-        value(Operator::BitOr, tag("bor")),
-        value(Operator::BitXor, tag("bxor")),
-        value(Operator::BitNot, tag("bnot")),
-        value(Operator::Extend, tag("extend_ff")),
-        value(Operator::Wrap, tag("wrap_i64")),
-        value(Operator::Load, tag("load")),
-        value(Operator::Store, tag("store")),
-        value(Operator::GetSignal, tag("get_signal")),
-        value(Operator::GetCmpSignal, tag("get_cmp_signal")),
-        value(Operator::SetSignal, tag("set_signal")),
-        value(Operator::SetCmpSignal, tag("set_cmp_signal")),
-        value(Operator::SetCmpIn, tag("set_cmp_input")),
-        value(Operator::SetCmpInCnt, tag("set_cmp_input_cnt")),
-        value(Operator::SetCmpInRun, tag("set_cmp_input_run")),
-        value(Operator::SetCmpInCntCheck, tag("set_cmp_input_cnt_check")),
-        value(Operator::Return, tag("return")),
-        value(Operator::Call, tag("call")),
-        value(Operator::Error, tag("error")),
     ])
     .parse(input)
 }
 
-//TODO: This is useless, we should parse expressions
-fn parse_two_i64(input: &str) -> IResult<&str, (i64, i64)> {
-    delimited(tag("("), separated_pair(i64, delimited(space0, tag(","), space0), i64), tag(")"))
-        .parse(input)
+fn parse_atomic(input: &str) -> IResult<&str, Atomic> {
+    alt((map(i64, Atomic::Constant), map(parse_variable_name, Atomic::Variable))).parse(input)
+}
+
+fn parse_two_atomics(input: &str) -> IResult<&str, (Atomic, Atomic)> {
+    delimited(
+        tag("("),
+        separated_pair(parse_atomic, delimited(space0, tag(","), space0), parse_atomic),
+        tag(")"),
+    )
+    .parse(input)
 }
 
 fn parse_signal(input: &str) -> IResult<&str, Parameter> {
-    map((tag("signal"), parse_two_i64), |(_, (index, size))| Parameter::Signal { index, size })
+    map((tag("signal"), parse_two_atomics), |(_, (index, size))| Parameter::Signal { index, size })
         .parse(input)
 }
 
@@ -81,11 +93,11 @@ fn parse_subcmp_signal(input: &str) -> IResult<&str, Parameter> {
             delimited(
                 tag("("),
                 (
-                    parse_variable_name,
+                    parse_atomic,
                     delimited(space0, tag(","), space0),
-                    i64,
+                    parse_atomic,
                     delimited(space0, tag(","), space0),
-                    i64,
+                    parse_atomic,
                 ),
                 tag(")"),
             ),
@@ -97,7 +109,7 @@ fn parse_subcmp_signal(input: &str) -> IResult<&str, Parameter> {
 
 // Parses: i64.memory(index, size)
 fn parse_i64_memory(input: &str) -> IResult<&str, Parameter> {
-    map((tag("i64.memory"), parse_two_i64), |(_, (index, size))| Parameter::I64Memory {
+    map((tag("i64.memory"), parse_two_atomics), |(_, (index, size))| Parameter::I64Memory {
         index,
         size,
     })
@@ -106,8 +118,11 @@ fn parse_i64_memory(input: &str) -> IResult<&str, Parameter> {
 
 // Parses: ff.memory(index, size)
 fn parse_ff_memory(input: &str) -> IResult<&str, Parameter> {
-    map((tag("ff.memory"), parse_two_i64), |(_, (index, size))| Parameter::FfMemory { index, size })
-        .parse(input)
+    map((tag("ff.memory"), parse_two_atomics), |(_, (index, size))| Parameter::FfMemory {
+        index,
+        size,
+    })
+    .parse(input)
 }
 
 fn parse_parameter(input: &str) -> IResult<&str, Parameter> {
@@ -115,12 +130,8 @@ fn parse_parameter(input: &str) -> IResult<&str, Parameter> {
 }
 
 pub fn parse_expression(input: &str) -> IResult<&str, Expression> {
-    alt((
-        map(i64, Expression::Constant),
-        map(parse_parameter, Expression::Parameter),
-        map(parse_variable_name, Expression::Variable),
-    ))
-    .parse(input)
+    alt((map(parse_parameter, Expression::Parameter), map(parse_atomic, Expression::Atomic)))
+        .parse(input)
 }
 
 fn parse_operation_no_output(input: &str) -> IResult<&str, Box<ASTNode>> {
@@ -136,7 +147,10 @@ fn parse_operation_no_output(input: &str) -> IResult<&str, Box<ASTNode>> {
     let (input, _) = space0(input)?;
     let (input, operands) = separated_list0(space0, parse_expression).parse(input)?;
 
-    Ok((input, Box::new(ASTNode::Operation { num_type, operator, output: None, operands })))
+    Ok((
+        input,
+        Box::new(ASTNode::Operation { num_type, operator: Some(operator), output: None, operands }),
+    ))
 }
 
 fn parse_operation_with_output(input: &str) -> IResult<&str, Box<ASTNode>> {
@@ -157,12 +171,40 @@ fn parse_operation_with_output(input: &str) -> IResult<&str, Box<ASTNode>> {
     let (input, _) = space0(input)?;
     let (input, operands) = separated_list0(space0, parse_expression).parse(input)?;
 
-    Ok((input, Box::new(ASTNode::Operation { num_type, operator, output: Some(output), operands })))
+    Ok((
+        input,
+        Box::new(ASTNode::Operation {
+            num_type,
+            operator: Some(operator),
+            output: Some(output),
+            operands,
+        }),
+    ))
+}
+
+fn parse_operation_two_variables(input: &str) -> IResult<&str, Box<ASTNode>> {
+    let (input, output) = parse_variable_name(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = tag("=")(input)?;
+    let (input, _) = space0(input)?;
+
+    let (input, op) = parse_atomic(input)?;
+
+    Ok((
+        input,
+        Box::new(ASTNode::Operation {
+            num_type: None,
+            operator: None,
+            output: Some(output),
+            operands: vec![Expression::Atomic(op)],
+        }),
+    ))
 }
 
 pub fn parse_operation(input: &str) -> IResult<&str, Box<ASTNode>> {
-    alt((parse_operation_no_output, parse_operation_with_output)).parse(input)
+    alt((parse_operation_no_output, parse_operation_with_output, parse_operation_two_variables)).parse(input)
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -180,187 +222,305 @@ mod tests {
         assert_eq!(parse_operator("add"), Ok(("", Operator::Add)));
         assert_eq!(parse_operator("sub"), Ok(("", Operator::Sub)));
         assert_eq!(parse_operator("mul"), Ok(("", Operator::Mul)));
+        assert_eq!(parse_operator("div"), Ok(("", Operator::Div)));
+        assert_eq!(parse_operator("rem"), Ok(("", Operator::Rem)));
+        assert_eq!(parse_operator("idiv"), Ok(("", Operator::IDiv)));
+        assert_eq!(parse_operator("pow"), Ok(("", Operator::Pow)));
+
+        assert_eq!(parse_operator("gt"), Ok(("", Operator::Greater)));
+        assert_eq!(parse_operator("ge"), Ok(("", Operator::GreaterEqual)));
+        assert_eq!(parse_operator("lt"), Ok(("", Operator::Less)));
+        assert_eq!(parse_operator("le"), Ok(("", Operator::LessEqual)));
+        assert_eq!(parse_operator("eq"), Ok(("", Operator::Equal)));
+        assert_eq!(parse_operator("neq"), Ok(("", Operator::NotEqual)));
+        assert_eq!(parse_operator("eqz"), Ok(("", Operator::EqualZero)));
+
+        assert_eq!(parse_operator("and"), Ok(("", Operator::And)));
+        assert_eq!(parse_operator("or"), Ok(("", Operator::Or)));
+
+        assert_eq!(parse_operator("shr"), Ok(("", Operator::ShiftRight)));
+        assert_eq!(parse_operator("shl"), Ok(("", Operator::ShiftLeft)));
+        assert_eq!(parse_operator("band"), Ok(("", Operator::BitAnd)));
+        assert_eq!(parse_operator("bor"), Ok(("", Operator::BitOr)));
+        assert_eq!(parse_operator("bxor"), Ok(("", Operator::BitXor)));
+        assert_eq!(parse_operator("bnot"), Ok(("", Operator::BitNot)));
+
+        assert_eq!(parse_operator("extend_ff"), Ok(("", Operator::Extend)));
+        assert_eq!(parse_operator("wrap_i64"), Ok(("", Operator::Wrap)));
+
+        assert_eq!(parse_operator("load", ), Ok(("", Operator::Load)));
+        assert_eq!(parse_operator("store", ), Ok(("", Operator::Store)));
+
+        assert_eq!(parse_operator("get_signal"), Ok(("", Operator::GetSignal)));
+        assert_eq!(parse_operator("get_cmp_signal"), Ok(("", Operator::GetCmpSignal)));
+        assert_eq!(parse_operator("set_signal"), Ok(("", Operator::SetSignal)));
+        assert_eq!(parse_operator("set_cmp_input"), Ok(("", Operator::SetCmpIn)));
+        assert_eq!(parse_operator("set_cmp_input_cnt"), Ok(("", Operator::SetCmpInCnt)));
+        assert_eq!(parse_operator("set_cmp_input_run"), Ok(("", Operator::SetCmpInRun)));
+        assert_eq!(parse_operator("set_cmp_input_cnt_check"), Ok(("", Operator::SetCmpInCntCheck)));
+
+        assert_eq!(parse_operator("return"), Ok(("", Operator::Return)));
+        assert_eq!(parse_operator("call"), Ok(("", Operator::Call)));
+        assert_eq!(parse_operator("error"), Ok(("", Operator::Error)));
+
         assert!(parse_operator("unknown").is_err());
     }
 
     #[test]
-    fn test_parse_two_i64() {
-        assert_eq!(parse_two_i64("(1,2)"), Ok(("", (1, 2))));
-        assert!(parse_two_i64("(1,)").is_err());
+    fn test_parse_atomic() {
+        assert_eq!(parse_atomic("42"), Ok(("", Atomic::Constant(42))));
+        assert_eq!(parse_atomic("variable_name"), Ok(("", Atomic::Variable("variable_name".to_string()))));
+    }
+
+    #[test]
+    fn test_parse_two_atomics() {
+        assert_eq!(
+            parse_two_atomics("(42, 64)"),
+            Ok(("", (Atomic::Constant(42), Atomic::Constant(64))))
+        );
+        assert_eq!(
+            parse_two_atomics("(adfaf, jkjk)"),
+            Ok(("", (Atomic::Variable("adfaf".to_string()), Atomic::Variable("jkjk".to_string()))))
+        );
+        assert_eq!(
+            parse_two_atomics("(adfaf, 3)"),
+            Ok(("", (Atomic::Variable("adfaf".to_string()), Atomic::Constant(3))))
+        );
+        assert!(parse_two_atomics("(42, )").is_err());
     }
 
     #[test]
     fn test_parse_signal() {
-        assert_eq!(parse_signal("signal(1,2)"), Ok(("", Parameter::Signal { index: 1, size: 2 })));
-        assert!(parse_signal("signal(1,)").is_err());
+        assert_eq!(
+            parse_signal("signal(42, 64)"),
+            Ok(("", Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+        );
     }
 
     #[test]
     fn test_parse_subcmp_signal() {
         assert_eq!(
-            parse_subcmp_signal("subcmpsignal(component,1,2)"),
+            parse_subcmp_signal("subcmpsignal(component, 42, 64)"),
             Ok((
                 "",
-                Parameter::SubcmpSignal { component: "component".to_string(), index: 1, size: 2 }
+                Parameter::SubcmpSignal {
+                    component: Atomic::Variable("component".to_string()),
+                    index: Atomic::Constant(42),
+                    size: Atomic::Constant(64)
+                }
             ))
         );
-        assert!(parse_subcmp_signal("subcmpsignal(component,1,)").is_err());
     }
 
     #[test]
     fn test_parse_i64_memory() {
         assert_eq!(
-            parse_i64_memory("i64.memory(1,2)"),
-            Ok(("", Parameter::I64Memory { index: 1, size: 2 }))
+            parse_i64_memory("i64.memory(42, 64)"),
+            Ok(("", Parameter::I64Memory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
         );
-        assert!(parse_i64_memory("i64.memory(1,)").is_err());
     }
 
     #[test]
     fn test_parse_ff_memory() {
         assert_eq!(
-            parse_ff_memory("ff.memory(1,2)"),
-            Ok(("", Parameter::FfMemory { index: 1, size: 2 }))
+            parse_ff_memory("ff.memory(42, 64)"),
+            Ok(("", Parameter::FfMemory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
         );
-        assert!(parse_ff_memory("ff.memory(1,)").is_err());
     }
 
     #[test]
     fn test_parse_parameter() {
         assert_eq!(
-            parse_parameter("signal(1,2)"),
-            Ok(("", Parameter::Signal { index: 1, size: 2 }))
+            parse_parameter("signal(42, 64)"),
+            Ok(("", Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
         );
         assert_eq!(
-            parse_parameter("subcmpsignal(component,1,2)"),
+            parse_parameter("i64.memory(42, 64)"),
+            Ok(("", Parameter::I64Memory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+        );
+        assert_eq!(
+            parse_parameter("subcmpsignal(component, 42, 64)"),
             Ok((
                 "",
-                Parameter::SubcmpSignal { component: "component".to_string(), index: 1, size: 2 }
+                Parameter::SubcmpSignal {
+                    component: Atomic::Variable("component".to_string()),
+                    index: Atomic::Constant(42),
+                    size: Atomic::Constant(64)
+                }
             ))
         );
         assert_eq!(
-            parse_parameter("i64.memory(1,2)"),
-            Ok(("", Parameter::I64Memory { index: 1, size: 2 }))
-        );
-        assert_eq!(
-            parse_parameter("ff.memory(1,2)"),
-            Ok(("", Parameter::FfMemory { index: 1, size: 2 }))
+            parse_ff_memory("ff.memory(42, 64)"),
+            Ok(("", Parameter::FfMemory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
         );
     }
 
     #[test]
     fn test_parse_expression() {
-        assert_eq!(parse_expression("42"), Ok(("", Expression::Constant(42))));
         assert_eq!(
-            parse_expression("variable"),
-            Ok(("", Expression::Variable("variable".to_string())))
+            parse_expression("signal(42, 64)"),
+            Ok(("", Expression::Parameter(Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) })))
+        );
+        assert_eq!(parse_expression("42"), Ok(("", Expression::Atomic(Atomic::Constant(42)))));
+        assert_eq!(parse_expression("adfaf"), Ok(("", Expression::Atomic(Atomic::Variable("adfaf".to_string())))));
+    }
+
+    #[test]
+    fn test_parse_operation_no_output() {
+        assert_eq!(
+            parse_operation_no_output("i64.add 42 64"),
+            Ok((
+                "",
+                Box::new(ASTNode::Operation {
+                    num_type: Some(NumericType::Integer),
+                    operator: Some(Operator::Add),
+                    output: None,
+                    operands: vec![
+                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Constant(64))
+                    ]
+                })
+            ))
         );
         assert_eq!(
-            parse_expression("signal(1,2)"),
-            Ok(("", Expression::Parameter(Parameter::Signal { index: 1, size: 2 })))
+            parse_operation_no_output("get_signal 42 test"),
+            Ok((
+                "",
+                Box::new(ASTNode::Operation {
+                    num_type: None,
+                    operator: Some(Operator::GetSignal),
+                    output: None,
+                    operands: vec![
+                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Variable("test".to_string())),
+                    ]
+                })
+            ))
+        );
+        assert_eq!(
+            parse_operation_no_output("ff.call $foo y signal(s,3) ff.memory(0,1)"),
+            Ok((
+                "",
+                Box::new(ASTNode::Operation {
+                    num_type: Some(NumericType::FiniteField),
+                    operator: Some(Operator::Call),
+                    output: None,
+                    operands: vec![
+                        Expression::Atomic(Atomic::Variable("$foo".to_string())),
+                        Expression::Atomic(Atomic::Variable("y".to_string())),
+                        Expression::Parameter(Parameter::Signal {
+                            index: Atomic::Variable("s".to_string()),
+                            size: Atomic::Constant(3)
+                        }),
+                        Expression::Parameter(Parameter::FfMemory {
+                            index: Atomic::Constant(0),
+                            size: Atomic::Constant(1)
+                        })
+                    ]
+                })
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_operation_with_output() {
+        assert_eq!(
+            parse_operation_with_output("result = ff.add 42 64"),
+            Ok((
+                "",
+                Box::new(ASTNode::Operation {
+                    num_type: Some(NumericType::FiniteField),
+                    operator: Some(Operator::Add),
+                    output: Some("result".to_string()),
+                    operands: vec![
+                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Constant(64))
+                    ]
+                })
+            ))
+        );
+        assert_eq!(
+            parse_operation_with_output("x = ff.call $foo y signal(s,3) ff.memory(0,1)"),
+            Ok((
+            "",
+            Box::new(ASTNode::Operation {
+                num_type: Some(NumericType::FiniteField),
+                operator: Some(Operator::Call),
+                output: Some("x".to_string()),
+                operands: vec![
+                Expression::Atomic(Atomic::Variable("$foo".to_string())),
+                Expression::Atomic(Atomic::Variable("y".to_string())),
+                Expression::Parameter(Parameter::Signal {
+                    index: Atomic::Variable("s".to_string()),
+                    size: Atomic::Constant(3)
+                }),
+                Expression::Parameter(Parameter::FfMemory {
+                    index: Atomic::Constant(0),
+                    size: Atomic::Constant(1)
+                })
+                ]
+            })
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_operation_two_variables() {
+        assert_eq!(
+            parse_operation_two_variables("result = 42"),
+            Ok((
+                "",
+                Box::new(ASTNode::Operation {
+                    num_type: None,
+                    operator: None,
+                    output: Some("result".to_string()),
+                    operands: vec![Expression::Atomic(Atomic::Constant(42))]
+                })
+            ))
         );
     }
 
     #[test]
     fn test_parse_operation() {
         assert_eq!(
-            parse_operation("x = i64.add 1 2"),
-            Ok((
-                "",
-                Box::new(ASTNode::Operation {
-                    num_type: Some(NumericType::Integer),
-                    operator: Operator::Add,
-                    output: Some("x".to_string()),
-                    operands: vec![Expression::Constant(1), Expression::Constant(2)],
-                })
-            ))
-        );
-        assert_eq!(
-            parse_operation("ff.mul 3 4"),
-            Ok((
-                "",
-                Box::new(ASTNode::Operation {
-                    num_type: Some(NumericType::FiniteField),
-                    operator: Operator::Mul,
-                    output: None,
-                    operands: vec![Expression::Constant(3), Expression::Constant(4)],
-                })
-            ))
-        );
-    }
-
-    #[test]
-    fn test_parse_operation_signal() {
-        assert_eq!(
-            parse_operation("set_signal signal(1,2) 3"),
+            parse_operation("result = add 42 64"),
             Ok((
                 "",
                 Box::new(ASTNode::Operation {
                     num_type: None,
-                    operator: Operator::SetSignal,
-                    output: None,
+                    operator: Some(Operator::Add),
+                    output: Some("result".to_string()),
                     operands: vec![
-                        Expression::Parameter(Parameter::Signal { index: 1, size: 2 }),
-                        Expression::Constant(3)
-                    ],
+                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Constant(64))
+                    ]
                 })
             ))
         );
-    }
-
-    #[test]
-    fn test_parse_operation_function_call() {
         assert_eq!(
-            parse_operation("call $my_function 1 2 3"),
+            parse_operation("add 42 64"),
             Ok((
                 "",
                 Box::new(ASTNode::Operation {
                     num_type: None,
-                    operator: Operator::Call,
+                    operator: Some(Operator::Add),
                     output: None,
                     operands: vec![
-                        Expression::Variable("$my_function".to_string()),
-                        Expression::Constant(1),
-                        Expression::Constant(2),
-                        Expression::Constant(3)
-                    ],
+                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Constant(64))
+                    ]
                 })
             ))
         );
-    }
-
-    #[test]
-    fn test_parse_complex_operation() {
         assert_eq!(
-            parse_operation("x = ff.call $foo y signal(0,3) ff.memory(0,1)"),
-            Ok((
-                "",
-                Box::new(ASTNode::Operation {
-                    num_type: Some(NumericType::FiniteField),
-                    operator: Operator::Call,
-                    output: Some("x".to_string()),
-                    operands: vec![
-                        Expression::Variable("$foo".to_string()),
-                        Expression::Variable("y".to_string()),
-                        Expression::Parameter(Parameter::Signal { index: 0, size: 3 }),
-                        Expression::Parameter(Parameter::FfMemory { index: 0, size: 1 }),
-                    ],
-                })
-            ))
-        );
-    }
-
-    #[test]
-    fn test_parse_operation_return() {
-        assert_eq!(
-            parse_operation("return 42"),
+            parse_operation("res = x"),
             Ok((
                 "",
                 Box::new(ASTNode::Operation {
                     num_type: None,
-                    operator: Operator::Return,
-                    output: None,
-                    operands: vec![Expression::Constant(42)],
+                    operator: None,
+                    output: Some("res".to_string()),
+                    operands: vec![Expression::Atomic(Atomic::Variable("x".to_string()))]
                 })
             ))
         );
