@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumericType {
     Integer,
@@ -70,7 +69,6 @@ pub enum Atomic {
     Variable(String),
 }
 
-//TODO: change to expression
 #[derive(Debug, Clone, PartialEq)]
 pub enum Parameter {
     Signal {

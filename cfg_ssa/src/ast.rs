@@ -28,7 +28,7 @@ pub struct Template {
     pub outputs: Vec<String>,
     pub signals: usize,
     pub components: usize,
-    pub body: Vec<Box<ASTNode>>,
+    pub body: Vec<ASTNode>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,11 +41,11 @@ pub enum ASTNode {
     },
     IfThenElse {
         condition: Expression,
-        if_case: Vec<Box<ASTNode>>,
-        else_case: Option<Vec<Box<ASTNode>>>,
+        if_case: Vec<ASTNode>,
+        else_case: Option<Vec<ASTNode>>,
     },
     Loop {
-        body: Vec<Box<ASTNode>>,
+        body: Vec<ASTNode>,
     },
     Break,
     Continue,

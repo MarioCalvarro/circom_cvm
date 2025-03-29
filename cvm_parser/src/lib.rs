@@ -35,16 +35,16 @@ fn parse_useless(input: &str) -> IResult<&str, ()> {
     Ok((input, ()))
 }
 
-fn parse_loop(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_loop(input: &str) -> IResult<&str, ASTNode> {
     let (input, _) = tag("loop").parse(input)?;
     let (input, _) = parse_useless(input)?;
     let (input, body) = many0(parse_ast_node).parse(input)?;
     let (input, _) = parse_useless(input)?;
     let (input, _) = tag("end").parse(input)?;
-    Ok((input, Box::new(ASTNode::Loop {body})))
+    Ok((input, ASTNode::Loop {body}))
 }
 
-fn parse_if_then_else(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_if_then_else(input: &str) -> IResult<&str, ASTNode> {
     let (input, _) = tag("if").parse(input)?;
     let (input, _) = space1(input)?;
     let (input, condition) = parse_expression(input)?;
@@ -54,18 +54,18 @@ fn parse_if_then_else(input: &str) -> IResult<&str, Box<ASTNode>> {
     let (input, else_case) = opt(preceded(tag("else"), many0(parse_ast_node))).parse(input)?;
     let (input, _) = parse_useless(input)?;
     let (input, _) = tag("end").parse(input)?;
-    Ok((input, Box::new(ASTNode::IfThenElse {condition, if_case, else_case})))
+    Ok((input, ASTNode::IfThenElse {condition, if_case, else_case}))
 }
 
-fn parse_break(input: &str) -> IResult<&str, Box<ASTNode>> {
-    value(Box::new(ASTNode::Break), tag("break")).parse(input)
+fn parse_break(input: &str) -> IResult<&str, ASTNode> {
+    value(ASTNode::Break, tag("break")).parse(input)
 }
 
-fn parse_continue(input: &str) -> IResult<&str, Box<ASTNode>> {
-    value(Box::new(ASTNode::Continue), tag("continue")).parse(input)
+fn parse_continue(input: &str) -> IResult<&str, ASTNode> {
+    value(ASTNode::Continue, tag("continue")).parse(input)
 }
 
-fn parse_ast_node(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_ast_node(input: &str) -> IResult<&str, ASTNode> {
     //Delimited by useless to avoid parsing comments and whitespaces
     complete(delimited(
      parse_useless,
@@ -248,8 +248,8 @@ mod tests {
     #[test]
     fn test_parse_loop() {
         let input = "loop\n  ;; comment\n  x = ff.add x y\n y = i64.sub 3 z\n ;;comment\n end\n";
-        assert_eq!(parse_loop(input), Ok(("\n", Box::new(ASTNode::Loop { body: vec![
-            Box::new(ASTNode::Operation {
+        assert_eq!(parse_loop(input), Ok(("\n", ASTNode::Loop { body: vec![
+            ASTNode::Operation {
             num_type: Some(NumericType::FiniteField),
             operator: Some(Operator::Add),
             output: Some("x".to_string()),
@@ -257,8 +257,8 @@ mod tests {
                 Expression::Atomic(Atomic::Variable("x".to_string())),
                 Expression::Atomic(Atomic::Variable("y".to_string()))
             ],
-            }),
-            Box::new(ASTNode::Operation {
+            },
+            ASTNode::Operation {
             num_type: Some(NumericType::Integer),
             operator: Some(Operator::Sub),
             output: Some("y".to_string()),
@@ -266,28 +266,28 @@ mod tests {
                 Expression::Atomic(Atomic::Constant(3)),
                 Expression::Atomic(Atomic::Variable("z".to_string()))
             ],
-            })
-        ]}))));
+            }
+        ]})));
     }
 
     #[test]
     fn test_parse_if_then_else() {
         let input = "if condition\n  ;; comment\n x = ff.add x y\n else\n  ;; comment\n x = 1 end\n";
-        let expected = Box::new(ASTNode::IfThenElse {
+        let expected = ASTNode::IfThenElse {
             condition: Expression::Atomic(Atomic::Variable("condition".to_string())),
-            if_case: vec![Box::new(ASTNode::Operation {
+            if_case: vec![ASTNode::Operation {
                 num_type: Some(NumericType::FiniteField),
                 operator: Some(Operator::Add),
                 output: Some("x".to_string()),
                 operands: vec![Expression::Atomic(Atomic::Variable("x".to_string())), Expression::Atomic(Atomic::Variable("y".to_string()))],
-            })],
-            else_case: Some(vec![Box::new(ASTNode::Operation {
+            }],
+            else_case: Some(vec![ASTNode::Operation {
                 num_type: None,
                 operator: None,
                 output: Some("x".to_string()),
                 operands: vec![Expression::Atomic(Atomic::Constant(1))],
-            })]),
-        });
+            }]),
+        };
         assert_eq!(parse_if_then_else(input), Ok(("\n", expected)));
     }
 
@@ -1223,7 +1223,6 @@ mod tests {
                 ;; end of store bucket
                 ";
         let res = parse_program(input);
-        println!("{:?}", res);
         assert!(res.is_ok());
     }
 }

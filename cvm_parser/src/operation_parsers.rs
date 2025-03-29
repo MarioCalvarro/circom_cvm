@@ -134,7 +134,7 @@ pub fn parse_expression(input: &str) -> IResult<&str, Expression> {
         .parse(input)
 }
 
-fn parse_operation_no_output(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_operation_no_output(input: &str) -> IResult<&str, ASTNode> {
     let (input, num_type) = opt(parse_numeric_type).parse(input)?;
     let (input, _) = if num_type.is_some() {
         let (input, _) = tag(".")(input)?;
@@ -149,11 +149,11 @@ fn parse_operation_no_output(input: &str) -> IResult<&str, Box<ASTNode>> {
 
     Ok((
         input,
-        Box::new(ASTNode::Operation { num_type, operator: Some(operator), output: None, operands }),
+        ASTNode::Operation { num_type, operator: Some(operator), output: None, operands },
     ))
 }
 
-fn parse_operation_with_output(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_operation_with_output(input: &str) -> IResult<&str, ASTNode> {
     let (input, output) = parse_variable_name(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = tag("=")(input)?;
@@ -173,16 +173,16 @@ fn parse_operation_with_output(input: &str) -> IResult<&str, Box<ASTNode>> {
 
     Ok((
         input,
-        Box::new(ASTNode::Operation {
+        ASTNode::Operation {
             num_type,
             operator: Some(operator),
             output: Some(output),
             operands,
-        }),
+        },
     ))
 }
 
-fn parse_operation_two_variables(input: &str) -> IResult<&str, Box<ASTNode>> {
+fn parse_operation_two_variables(input: &str) -> IResult<&str, ASTNode> {
     let (input, output) = parse_variable_name(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = tag("=")(input)?;
@@ -192,16 +192,16 @@ fn parse_operation_two_variables(input: &str) -> IResult<&str, Box<ASTNode>> {
 
     Ok((
         input,
-        Box::new(ASTNode::Operation {
+        ASTNode::Operation {
             num_type: None,
             operator: None,
             output: Some(output),
             operands: vec![Expression::Atomic(op)],
-        }),
+        },
     ))
 }
 
-pub fn parse_operation(input: &str) -> IResult<&str, Box<ASTNode>> {
+pub fn parse_operation(input: &str) -> IResult<&str, ASTNode> {
     alt((parse_operation_no_output, parse_operation_with_output, parse_operation_two_variables)).parse(input)
 }
 
@@ -371,7 +371,7 @@ mod tests {
             parse_operation_no_output("i64.add 42 64"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: Some(NumericType::Integer),
                     operator: Some(Operator::Add),
                     output: None,
@@ -379,14 +379,14 @@ mod tests {
                         Expression::Atomic(Atomic::Constant(42)),
                         Expression::Atomic(Atomic::Constant(64))
                     ]
-                })
+                }
             ))
         );
         assert_eq!(
             parse_operation_no_output("get_signal 42 test"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: None,
                     operator: Some(Operator::GetSignal),
                     output: None,
@@ -394,14 +394,14 @@ mod tests {
                         Expression::Atomic(Atomic::Constant(42)),
                         Expression::Atomic(Atomic::Variable("test".to_string())),
                     ]
-                })
+                }
             ))
         );
         assert_eq!(
             parse_operation_no_output("ff.call $foo y signal(s,3) ff.memory(0,1)"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: Some(NumericType::FiniteField),
                     operator: Some(Operator::Call),
                     output: None,
@@ -417,7 +417,7 @@ mod tests {
                             size: Atomic::Constant(1)
                         })
                     ]
-                })
+                }
             ))
         );
     }
@@ -428,7 +428,7 @@ mod tests {
             parse_operation_with_output("result = ff.add 42 64"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: Some(NumericType::FiniteField),
                     operator: Some(Operator::Add),
                     output: Some("result".to_string()),
@@ -436,14 +436,14 @@ mod tests {
                         Expression::Atomic(Atomic::Constant(42)),
                         Expression::Atomic(Atomic::Constant(64))
                     ]
-                })
+                }
             ))
         );
         assert_eq!(
             parse_operation_with_output("x = ff.call $foo y signal(s,3) ff.memory(0,1)"),
             Ok((
             "",
-            Box::new(ASTNode::Operation {
+            ASTNode::Operation {
                 num_type: Some(NumericType::FiniteField),
                 operator: Some(Operator::Call),
                 output: Some("x".to_string()),
@@ -459,7 +459,7 @@ mod tests {
                     size: Atomic::Constant(1)
                 })
                 ]
-            })
+            }
             ))
         );
     }
@@ -470,12 +470,12 @@ mod tests {
             parse_operation_two_variables("result = 42"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: None,
                     operator: None,
                     output: Some("result".to_string()),
                     operands: vec![Expression::Atomic(Atomic::Constant(42))]
-                })
+                }
             ))
         );
     }
@@ -486,7 +486,7 @@ mod tests {
             parse_operation("result = add 42 64"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: None,
                     operator: Some(Operator::Add),
                     output: Some("result".to_string()),
@@ -494,14 +494,14 @@ mod tests {
                         Expression::Atomic(Atomic::Constant(42)),
                         Expression::Atomic(Atomic::Constant(64))
                     ]
-                })
+                }
             ))
         );
         assert_eq!(
             parse_operation("add 42 64"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: None,
                     operator: Some(Operator::Add),
                     output: None,
@@ -509,19 +509,19 @@ mod tests {
                         Expression::Atomic(Atomic::Constant(42)),
                         Expression::Atomic(Atomic::Constant(64))
                     ]
-                })
+                }
             ))
         );
         assert_eq!(
             parse_operation("res = x"),
             Ok((
                 "",
-                Box::new(ASTNode::Operation {
+                ASTNode::Operation {
                     num_type: None,
                     operator: None,
                     output: Some("res".to_string()),
                     operands: vec![Expression::Atomic(Atomic::Variable("x".to_string()))]
-                })
+                }
             ))
         );
     }
