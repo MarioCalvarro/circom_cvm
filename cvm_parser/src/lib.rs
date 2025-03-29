@@ -8,6 +8,7 @@ use cfg_ssa::ast::*;
 mod initial_parsers;
 mod operation_parsers;
 use initial_parsers::*;
+use num_bigint::BigInt;
 use operation_parsers::{parse_expression, parse_operation};
 
 fn parse_variable_name(input: &str) -> IResult<&str, String> {
@@ -113,36 +114,107 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     }))
 }
 
+#[derive(Debug)]
+enum ASTField {
+    Field(BigInt),
+    SignalsMemory(usize),
+    ComponentsHeap(usize),
+    MainTemplate(String),
+    ComponentsCreationMode(ComponentCreationMode),
+    Witness(Vec<usize>),
+    Template(Template),
+}
+
+fn parse_ast_field(input: &str) -> IResult<&str, ASTField> {
+    complete(preceded(parse_useless, alt((
+            map(parse_prime, ASTField::Field),
+            map(parse_signal_memory, ASTField::SignalsMemory),
+            map(parse_components_heap, ASTField::ComponentsHeap),
+            map(parse_start, ASTField::MainTemplate),
+            map(parse_components, ASTField::ComponentsCreationMode),
+            map(parse_witness, ASTField::Witness),
+            map(parse_template, ASTField::Template),
+    )))).parse(input)
+}
+
 fn parse_program(input: &str) -> IResult<&str, AST> {
-    let (input, _) = parse_useless(input)?;
-    let (input, field) = parse_prime(input)?;
-    let (input, _) = parse_useless(input)?;
+    let (remaining_input, fields) = many0(parse_ast_field).parse(input)?;
 
-    let (input, signals_memory) = parse_signal_memory(input)?;
-    let (input, _) = parse_useless(input)?;
+    // Temporary storage for each field
+    let mut field_opt: Option<BigInt> = None;
+    let mut signals_memory_opt: Option<usize> = None;
+    let mut components_heap_opt: Option<usize> = None;
+    let mut main_template_opt: Option<String> = None;
+    let mut components_creation_mode_opt: Option<ComponentCreationMode> = None;
+    let mut witness: Option<Vec<usize>> = None;
+    let mut templates: Vec<Template> = Vec::new();
 
-    let (input, components_heap) = parse_components_heap(input)?;
-    let (input, _) = parse_useless(input)?;
+    // Process each parsed field
+    // If one is repeated -> TODO: Error (current) or change value
+    for ast_field in fields {
+        match ast_field {
+            ASTField::Field(val) => {
+                if field_opt.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                field_opt = Some(val);
+            }
+            ASTField::SignalsMemory(val) => {
+                if signals_memory_opt.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                signals_memory_opt = Some(val);
+            }
+            ASTField::ComponentsHeap(val) => {
+                if components_heap_opt.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                components_heap_opt = Some(val);
+            }
+            ASTField::MainTemplate(val) => {
+                if main_template_opt.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                main_template_opt = Some(val);
+            }
+            ASTField::ComponentsCreationMode(val) => {
+                if components_creation_mode_opt.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                components_creation_mode_opt = Some(val);
+            }
+            ASTField::Witness(vec) => {
+                if witness.is_some() {
+                    return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)));
+                }
+                witness = Some(vec);
+            }
+            ASTField::Template(tem) => {
+                templates.push(tem);
+            }
+        }
+    }
 
-    let (input, main_template) = parse_start(input)?;
-    let (input, _) = parse_useless(input)?;
+    // Check that all required fields were found.
+    let field = field_opt.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
+    let signals_memory = signals_memory_opt.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
+    let components_heap = components_heap_opt.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
+    let main_template = main_template_opt.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
+    let components_creation_mode = components_creation_mode_opt.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
+    let witness = witness.ok_or(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail)))?;
 
-    let (input, components_creation_mode) = parse_components(input)?;
-    let (input, _) = parse_useless(input)?;
-
-    let (input, witness) = parse_witness(input)?;
-    let (input, _) = parse_useless(input)?;
-
-    let (input, templates) = many0(complete(parse_template)).parse(input)?;
-    Ok((input, AST {
-        field,
-        signals_memory,
-        components_heap,
-        main_template,
-        components_creation_mode,
-        witness,
-        templates,
-    }))
+    Ok((
+        remaining_input,
+        AST {
+            field,
+            signals_memory,
+            components_heap,
+            main_template,
+            components_creation_mode,
+            witness,
+            templates,
+        },
+    ))
 }
 
 #[cfg(test)]
