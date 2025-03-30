@@ -18,6 +18,16 @@ pub struct AST {
     pub components_creation_mode: ComponentCreationMode,
     pub witness: Vec<usize>,
     pub templates: Vec<Template>,
+    pub functions: Vec<Function>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Function {
+    pub name: String,
+    pub inputs: Vec<String>,
+    pub outputs: Vec<String>,
+    pub local_memory: usize,
+    pub body: Vec<ASTNode>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

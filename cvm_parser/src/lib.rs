@@ -37,9 +37,7 @@ fn parse_useless(input: &str) -> IResult<&str, ()> {
 
 fn parse_loop(input: &str) -> IResult<&str, ASTNode> {
     let (input, _) = tag("loop").parse(input)?;
-    let (input, _) = parse_useless(input)?;
     let (input, body) = many0(parse_ast_node).parse(input)?;
-    let (input, _) = parse_useless(input)?;
     let (input, _) = tag("end").parse(input)?;
     Ok((input, ASTNode::Loop {body}))
 }
@@ -48,11 +46,8 @@ fn parse_if_then_else(input: &str) -> IResult<&str, ASTNode> {
     let (input, _) = tag("if").parse(input)?;
     let (input, _) = space1(input)?;
     let (input, condition) = parse_expression(input)?;
-    let (input, _) = parse_useless(input)?;
     let (input, if_case) = many0(parse_ast_node).parse(input)?;
-    let (input, _) = parse_useless(input)?;
     let (input, else_case) = opt(preceded(tag("else"), many0(parse_ast_node))).parse(input)?;
-    let (input, _) = parse_useless(input)?;
     let (input, _) = tag("end").parse(input)?;
     Ok((input, ASTNode::IfThenElse {condition, if_case, else_case}))
 }
@@ -69,9 +64,45 @@ fn parse_ast_node(input: &str) -> IResult<&str, ASTNode> {
     //Delimited by useless to avoid parsing comments and whitespaces
     complete(delimited(
      parse_useless,
-     alt((parse_operation, parse_if_then_else, parse_loop, parse_break, parse_continue)),
+     alt((parse_if_then_else, parse_loop, parse_break, parse_continue, parse_operation)),
      parse_useless
     )).parse(input)
+}
+
+fn parse_local_memory(input: &str) -> IResult<&str, usize> {
+    preceded(tag("local.memory"), preceded(space0, usize)).parse(input)
+}
+
+fn parse_function(input: &str) -> IResult<&str, Function> {
+    let (input, _) = tag("%%function").parse(input)?;
+    let (input, _) = space1(input)?;
+
+    let (input, name) = parse_variable_name(input)?;
+    let (input, _) = space0(input)?;
+
+    let (input, outputs) = delimited(tag("["),
+    delimited(space0, separated_list0(space1, alphanumeric1), space0), 
+    tag("]")).parse(input)?;
+    let outputs = outputs.iter().map(|x| x.to_string()).collect();
+    let (input, _) = space0(input)?;
+
+    let (input, inputs) = delimited(tag("["),
+    delimited(space0, separated_list0(space1, alphanumeric1), space0), 
+    tag("]")).parse(input)?;
+    let inputs = inputs.iter().map(|x| x.to_string()).collect();
+    let (input, _) = parse_useless(input)?;
+
+    let (input, local_memory) = parse_local_memory(input)?;
+
+    let (input, body) = many0(parse_ast_node).parse(input)?;
+
+    Ok((input, Function {
+        name,
+        outputs,
+        inputs,
+        local_memory,
+        body,
+    }))
 }
 
 fn parse_template(input: &str) -> IResult<&str, Template> {
@@ -81,16 +112,16 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     let (input, name) = parse_variable_name(input)?;
     let (input, _) = space0(input)?;
 
-    let (input, inputs) = delimited(tag("["),
-    delimited(space0, separated_list0(space1, alphanumeric1), space0), 
-    tag("]")).parse(input)?;
-    let inputs = inputs.iter().map(|x| x.to_string()).collect();
-    let (input, _) = space0(input)?;
-
     let (input, outputs) = delimited(tag("["),
     delimited(space0, separated_list0(space1, alphanumeric1), space0), 
     tag("]")).parse(input)?;
     let outputs = outputs.iter().map(|x| x.to_string()).collect();
+    let (input, _) = space0(input)?;
+
+    let (input, inputs) = delimited(tag("["),
+    delimited(space0, separated_list0(space1, alphanumeric1), space0), 
+    tag("]")).parse(input)?;
+    let inputs = inputs.iter().map(|x| x.to_string()).collect();
     let (input, _) = space0(input)?;
 
     let (input, signals) = delimited(tag("["),
@@ -98,6 +129,7 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     tag("]")).parse(input)?;
     let (input, _) = space0(input)?;
 
+    //TODO: Possible future change to a list
     let (input, components) = delimited(tag("["),
     delimited(space0, usize, space0),
     tag("]")).parse(input)?;
@@ -106,8 +138,8 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
 
     Ok((input, Template {
         name,
-        inputs,
         outputs,
+        inputs,
         signals,
         components,
         body,
@@ -123,6 +155,7 @@ enum ASTField {
     ComponentsCreationMode(ComponentCreationMode),
     Witness(Vec<usize>),
     Template(Template),
+    Function(Function),
 }
 
 fn parse_ast_field(input: &str) -> IResult<&str, ASTField> {
@@ -133,6 +166,7 @@ fn parse_ast_field(input: &str) -> IResult<&str, ASTField> {
             map(parse_start, ASTField::MainTemplate),
             map(parse_components, ASTField::ComponentsCreationMode),
             map(parse_witness, ASTField::Witness),
+            map(parse_function, ASTField::Function),
             map(parse_template, ASTField::Template),
     )))).parse(input)
 }
@@ -148,6 +182,7 @@ fn parse_program(input: &str) -> IResult<&str, AST> {
     let mut components_creation_mode_opt: Option<ComponentCreationMode> = None;
     let mut witness: Option<Vec<usize>> = None;
     let mut templates: Vec<Template> = Vec::new();
+    let mut functions: Vec<Function> = Vec::new();
 
     // Process each parsed field
     // If one is repeated -> TODO: Error (current) or change value
@@ -192,6 +227,9 @@ fn parse_program(input: &str) -> IResult<&str, AST> {
             ASTField::Template(tem) => {
                 templates.push(tem);
             }
+            ASTField::Function(fun) => {
+                functions.push(fun);
+            }
         }
     }
 
@@ -212,6 +250,7 @@ fn parse_program(input: &str) -> IResult<&str, AST> {
             main_template,
             components_creation_mode,
             witness,
+            functions,
             templates,
         },
     ))
@@ -295,16 +334,92 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_function() {
+        let input = "%%function my_function [output1 output2] [input1 input2]\nlocal.memory 10\n  ;; body\n x = ff.add y z\n\n";
+        let expected = Function {
+            name: "my_function".to_string(),
+            outputs: vec!["output1".to_string(), "output2".to_string()],
+            inputs: vec!["input1".to_string(), "input2".to_string()],
+            local_memory: 10,
+            body: vec![ASTNode::Operation {
+                num_type: Some(NumericType::FiniteField),
+                operator: Some(Operator::Add),
+                output: Some("x".to_string()),
+                operands: vec![
+                    Expression::Atomic(Atomic::Variable("y".to_string())),
+                    Expression::Atomic(Atomic::Variable("z".to_string())),
+                ],
+            }],
+        };
+        assert_eq!(parse_function(input), Ok(("", expected)));
+    }
+
+    #[test]
     fn test_parse_template() {
-        let input = "%%template template_name [input1 input2] [output1] [10] [5]\n  ;; body\n x = ff.add y z\n";
+        let input = "%%template template_name [output] [input1 input2] [10] [5]\n  ;; body\n x = ff.add y z\n ;;Me jodes?\n loop\n ;;Y tu?\n y = ff.mul x z\n end\n if condition\n  z = ff.sub x y\n else\n  z = ff.div x y\n end\n";
         let res = parse_template(input);
         println!("{:?}", res);
-        assert!(res.is_ok());
+        assert_eq!(res, Ok(("", Template {
+            name: "template_name".to_string(),
+            outputs: vec!["output".to_string()],
+            inputs: vec!["input1".to_string(), "input2".to_string()],
+            signals: 10,
+            components: 5,
+            body: vec![
+            ASTNode::Operation {
+                num_type: Some(NumericType::FiniteField),
+                operator: Some(Operator::Add),
+                output: Some("x".to_string()),
+                operands: vec![
+                Expression::Atomic(Atomic::Variable("y".to_string())),
+                Expression::Atomic(Atomic::Variable("z".to_string())),
+                ],
+            },
+            ASTNode::Loop {
+                body: vec![
+                ASTNode::Operation {
+                    num_type: Some(NumericType::FiniteField),
+                    operator: Some(Operator::Mul),
+                    output: Some("y".to_string()),
+                    operands: vec![
+                    Expression::Atomic(Atomic::Variable("x".to_string())),
+                    Expression::Atomic(Atomic::Variable("z".to_string())),
+                    ],
+                },
+                ],
+            },
+            ASTNode::IfThenElse {
+                condition: Expression::Atomic(Atomic::Variable("condition".to_string())),
+                if_case: vec![
+                ASTNode::Operation {
+                    num_type: Some(NumericType::FiniteField),
+                    operator: Some(Operator::Sub),
+                    output: Some("z".to_string()),
+                    operands: vec![
+                    Expression::Atomic(Atomic::Variable("x".to_string())),
+                    Expression::Atomic(Atomic::Variable("y".to_string())),
+                    ],
+                },
+                ],
+                else_case: Some(vec![
+                ASTNode::Operation {
+                    num_type: Some(NumericType::FiniteField),
+                    operator: Some(Operator::Div),
+                    output: Some("z".to_string()),
+                    operands: vec![
+                    Expression::Atomic(Atomic::Variable("x".to_string())),
+                    Expression::Atomic(Atomic::Variable("y".to_string())),
+                    ],
+                },
+                ]),
+            },
+            ],
+        })));
     }
 
     #[test]
     fn test_parse_program() {
-        let input = fs::read_to_string("test/sha256_2_test.cvm").unwrap();
+        let input = fs::read_to_string("test/sum_test.cvm").unwrap();
         let res = parse_program(&input);
         let mut file = fs::File::create("test/output.txt").unwrap();
         writeln!(file, "{:?}", res).unwrap();
