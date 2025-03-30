@@ -1,3 +1,6 @@
+extern crate num_bigint_dig as num_bigint;
+use num_bigint::BigInt;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumericType {
     Integer,
@@ -64,8 +67,14 @@ pub enum Operator {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum ConstantType {
+    FF(BigInt),
+    I64(i64),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Atomic {
-    Constant(i64),
+    Constant(ConstantType),
     Variable(String),
 }
 

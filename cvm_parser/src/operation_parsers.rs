@@ -1,13 +1,14 @@
 use cfg_ssa::{
     ast::ASTNode,
-    types::{Expression, NumericType, Operator, Parameter, Atomic},
+    types::{Atomic, ConstantType, Expression, NumericType, Operator, Parameter},
 };
+use num_bigint::BigInt;
 use crate::parse_variable_name;
 
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{i64, space0},
+    character::complete::{digit1, i64, space0},
     combinator::{map, opt, value},
     multi::separated_list0,
     sequence::{delimited, separated_pair},
@@ -67,10 +68,27 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
     .parse(input)
 }
 
-fn parse_atomic(input: &str) -> IResult<&str, Atomic> {
-    alt((map(i64, Atomic::Constant), map(parse_variable_name, Atomic::Variable))).parse(input)
+fn parse_constant(input: &str) -> IResult<&str, ConstantType> {
+    let (input, num_type) = parse_numeric_type(input)?;
+    let (input, _) = tag(".").parse(input)?;
+    match num_type {
+        NumericType::Integer => {
+            map(i64, ConstantType::I64).parse(input)
+        },
+        NumericType::FiniteField => {
+            map(digit1, |prime: &str| {
+                ConstantType::FF(BigInt::parse_bytes(prime.as_bytes(), 10).unwrap())
+            })
+            .parse(input)
+        },
+    }
 }
 
+fn parse_atomic(input: &str) -> IResult<&str, Atomic> {
+    alt((map(parse_constant, Atomic::Constant), map(parse_variable_name, Atomic::Variable))).parse(input)
+}
+
+//TODO: Change this to parse an variable name or a i64 (no ff)
 fn parse_two_atomics(input: &str) -> IResult<&str, (Atomic, Atomic)> {
     delimited(
         tag("("),
@@ -268,45 +286,47 @@ mod tests {
 
     #[test]
     fn test_parse_atomic() {
-        assert_eq!(parse_atomic("42"), Ok(("", Atomic::Constant(42))));
+        assert_eq!(parse_atomic("i64.42"), Ok(("", Atomic::Constant(ConstantType::I64(42)))));
+        assert_eq!(parse_atomic("ff.3"), Ok(("", Atomic::Constant(ConstantType::FF(BigInt::from(3))))));
+        assert_eq!(parse_atomic("ff.12345678901234567890"), Ok(("", Atomic::Constant(ConstantType::FF(BigInt::from(12345678901234567890u64))))));
         assert_eq!(parse_atomic("variable_name"), Ok(("", Atomic::Variable("variable_name".to_string()))));
     }
 
     #[test]
     fn test_parse_two_atomics() {
         assert_eq!(
-            parse_two_atomics("(42, 64)"),
-            Ok(("", (Atomic::Constant(42), Atomic::Constant(64))))
+            parse_two_atomics("(i64.42, i64.64)"),
+            Ok(("", (Atomic::Constant(ConstantType::I64(42)), Atomic::Constant(ConstantType::I64(64)))))
         );
         assert_eq!(
             parse_two_atomics("(adfaf, jkjk)"),
             Ok(("", (Atomic::Variable("adfaf".to_string()), Atomic::Variable("jkjk".to_string()))))
         );
         assert_eq!(
-            parse_two_atomics("(adfaf, 3)"),
-            Ok(("", (Atomic::Variable("adfaf".to_string()), Atomic::Constant(3))))
+            parse_two_atomics("(adfaf, i64.3)"),
+            Ok(("", (Atomic::Variable("adfaf".to_string()), Atomic::Constant(ConstantType::I64(3)))))
         );
-        assert!(parse_two_atomics("(42, )").is_err());
+        assert!(parse_two_atomics("(i64.42, )").is_err());
     }
 
     #[test]
     fn test_parse_signal() {
         assert_eq!(
-            parse_signal("signal(42, 64)"),
-            Ok(("", Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_signal("signal(i64.42, i64.64)"),
+            Ok(("", Parameter::Signal { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64)) }))
         );
     }
 
     #[test]
     fn test_parse_subcmp_signal() {
         assert_eq!(
-            parse_subcmp_signal("subcmpsignal(component, 42, 64)"),
+            parse_subcmp_signal("subcmpsignal(component, i64.42, i64.64)"),
             Ok((
                 "",
                 Parameter::SubcmpSignal {
                     component: Atomic::Variable("component".to_string()),
-                    index: Atomic::Constant(42),
-                    size: Atomic::Constant(64)
+                    index: Atomic::Constant(ConstantType::I64(42)),
+                    size: Atomic::Constant(ConstantType::I64(64)),
                 }
             ))
         );
@@ -315,60 +335,60 @@ mod tests {
     #[test]
     fn test_parse_i64_memory() {
         assert_eq!(
-            parse_i64_memory("i64.memory(42, 64)"),
-            Ok(("", Parameter::I64Memory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_i64_memory("i64.memory(i64.42, i64.64)"),
+            Ok(("", Parameter::I64Memory { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64)) }))
         );
     }
 
     #[test]
     fn test_parse_ff_memory() {
         assert_eq!(
-            parse_ff_memory("ff.memory(42, 64)"),
-            Ok(("", Parameter::FfMemory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_ff_memory("ff.memory(i64.42, i64.64)"),
+            Ok(("", Parameter::FfMemory { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64)) }))
         );
     }
 
     #[test]
     fn test_parse_parameter() {
         assert_eq!(
-            parse_parameter("signal(42, 64)"),
-            Ok(("", Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_parameter("signal(i64.42, i64.64)"),
+            Ok(("", Parameter::Signal { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64))}))
         );
         assert_eq!(
-            parse_parameter("i64.memory(42, 64)"),
-            Ok(("", Parameter::I64Memory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_parameter("i64.memory(i64.42, i64.64)"),
+            Ok(("", Parameter::I64Memory { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64))}))
         );
         assert_eq!(
-            parse_parameter("subcmpsignal(component, 42, 64)"),
+            parse_parameter("subcmpsignal(component, i64.42, i64.64)"),
             Ok((
                 "",
                 Parameter::SubcmpSignal {
                     component: Atomic::Variable("component".to_string()),
-                    index: Atomic::Constant(42),
-                    size: Atomic::Constant(64)
+                    index: Atomic::Constant(ConstantType::I64(42)),
+                    size: Atomic::Constant(ConstantType::I64(64))
                 }
             ))
         );
         assert_eq!(
-            parse_ff_memory("ff.memory(42, 64)"),
-            Ok(("", Parameter::FfMemory { index: Atomic::Constant(42), size: Atomic::Constant(64) }))
+            parse_ff_memory("ff.memory(i64.42, i64.64)"),
+            Ok(("", Parameter::FfMemory { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64))}))
         );
     }
 
     #[test]
     fn test_parse_expression() {
         assert_eq!(
-            parse_expression("signal(42, 64)"),
-            Ok(("", Expression::Parameter(Parameter::Signal { index: Atomic::Constant(42), size: Atomic::Constant(64) })))
+            parse_expression("signal(i64.42, i64.64)"),
+            Ok(("", Expression::Parameter(Parameter::Signal { index: Atomic::Constant(ConstantType::I64(42)), size: Atomic::Constant(ConstantType::I64(64))})))
         );
-        assert_eq!(parse_expression("42"), Ok(("", Expression::Atomic(Atomic::Constant(42)))));
+        assert_eq!(parse_expression("i64.42"), Ok(("", Expression::Atomic(Atomic::Constant(ConstantType::I64(42))))));
         assert_eq!(parse_expression("adfaf"), Ok(("", Expression::Atomic(Atomic::Variable("adfaf".to_string())))));
     }
 
     #[test]
     fn test_parse_operation_no_output() {
         assert_eq!(
-            parse_operation_no_output("i64.add 42 64"),
+            parse_operation_no_output("i64.add i64.42 i64.64"),
             Ok((
                 "",
                 ASTNode::Operation {
@@ -376,14 +396,14 @@ mod tests {
                     operator: Some(Operator::Add),
                     output: None,
                     operands: vec![
-                        Expression::Atomic(Atomic::Constant(42)),
-                        Expression::Atomic(Atomic::Constant(64))
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(42))),
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(64))),
                     ]
                 }
             ))
         );
         assert_eq!(
-            parse_operation_no_output("get_signal 42 test"),
+            parse_operation_no_output("get_signal i64.42 test"),
             Ok((
                 "",
                 ASTNode::Operation {
@@ -391,14 +411,14 @@ mod tests {
                     operator: Some(Operator::GetSignal),
                     output: None,
                     operands: vec![
-                        Expression::Atomic(Atomic::Constant(42)),
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(42))),
                         Expression::Atomic(Atomic::Variable("test".to_string())),
                     ]
                 }
             ))
         );
         assert_eq!(
-            parse_operation_no_output("ff.call $foo y signal(s,3) ff.memory(0,1)"),
+            parse_operation_no_output("ff.call $foo y signal(s,i64.3) ff.memory(i64.0,i64.1)"),
             Ok((
                 "",
                 ASTNode::Operation {
@@ -410,11 +430,11 @@ mod tests {
                         Expression::Atomic(Atomic::Variable("y".to_string())),
                         Expression::Parameter(Parameter::Signal {
                             index: Atomic::Variable("s".to_string()),
-                            size: Atomic::Constant(3)
+                            size: Atomic::Constant(ConstantType::I64(3))
                         }),
                         Expression::Parameter(Parameter::FfMemory {
-                            index: Atomic::Constant(0),
-                            size: Atomic::Constant(1)
+                            index: Atomic::Constant(ConstantType::I64(0)),
+                            size: Atomic::Constant(ConstantType::I64(1))
                         })
                     ]
                 }
@@ -425,7 +445,7 @@ mod tests {
     #[test]
     fn test_parse_operation_with_output() {
         assert_eq!(
-            parse_operation_with_output("result = ff.add 42 64"),
+            parse_operation_with_output("result = ff.add ff.42 ff.64"),
             Ok((
                 "",
                 ASTNode::Operation {
@@ -433,14 +453,14 @@ mod tests {
                     operator: Some(Operator::Add),
                     output: Some("result".to_string()),
                     operands: vec![
-                        Expression::Atomic(Atomic::Constant(42)),
-                        Expression::Atomic(Atomic::Constant(64))
+                        Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(42)))),
+                        Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(64))))
                     ]
                 }
             ))
         );
         assert_eq!(
-            parse_operation_with_output("x = ff.call $foo y signal(s,3) ff.memory(0,1)"),
+            parse_operation_with_output("x = ff.call $foo y signal(s,i64.3) ff.memory(i64.0,i64.1)"),
             Ok((
             "",
             ASTNode::Operation {
@@ -452,11 +472,11 @@ mod tests {
                 Expression::Atomic(Atomic::Variable("y".to_string())),
                 Expression::Parameter(Parameter::Signal {
                     index: Atomic::Variable("s".to_string()),
-                    size: Atomic::Constant(3)
+                    size: Atomic::Constant(ConstantType::I64(3))
                 }),
                 Expression::Parameter(Parameter::FfMemory {
-                    index: Atomic::Constant(0),
-                    size: Atomic::Constant(1)
+                    index: Atomic::Constant(ConstantType::I64(0)),
+                    size: Atomic::Constant(ConstantType::I64(1))
                 })
                 ]
             }
@@ -467,14 +487,14 @@ mod tests {
     #[test]
     fn test_parse_operation_two_variables() {
         assert_eq!(
-            parse_operation_two_variables("result = 42"),
+            parse_operation_two_variables("result = i64.42"),
             Ok((
                 "",
                 ASTNode::Operation {
                     num_type: None,
                     operator: None,
                     output: Some("result".to_string()),
-                    operands: vec![Expression::Atomic(Atomic::Constant(42))]
+                    operands: vec![Expression::Atomic(Atomic::Constant(ConstantType::I64(42)))]
                 }
             ))
         );
@@ -483,31 +503,31 @@ mod tests {
     #[test]
     fn test_parse_operation() {
         assert_eq!(
-            parse_operation("result = add 42 64"),
+            parse_operation("result = i64.add i64.42 i64.64"),
             Ok((
                 "",
                 ASTNode::Operation {
-                    num_type: None,
+                    num_type: Some(NumericType::Integer),
                     operator: Some(Operator::Add),
                     output: Some("result".to_string()),
                     operands: vec![
-                        Expression::Atomic(Atomic::Constant(42)),
-                        Expression::Atomic(Atomic::Constant(64))
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(42))),
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(64)))
                     ]
                 }
             ))
         );
         assert_eq!(
-            parse_operation("add 42 64"),
+            parse_operation("ff.add ff.42 ff.64"),
             Ok((
                 "",
                 ASTNode::Operation {
-                    num_type: None,
+                    num_type: Some(NumericType::FiniteField),
                     operator: Some(Operator::Add),
                     output: None,
                     operands: vec![
-                        Expression::Atomic(Atomic::Constant(42)),
-                        Expression::Atomic(Atomic::Constant(64))
+                        Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(42)))),
+                        Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(64))))
                     ]
                 }
             ))
