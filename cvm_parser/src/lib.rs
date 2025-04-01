@@ -334,6 +334,25 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_if_no_else() {
+        let input = "if condition\n  x = ff.add x y\nend\n";
+        let expected = ASTNode::IfThenElse {
+            condition: Expression::Atomic(Atomic::Variable("condition".to_string())),
+            if_case: vec![ASTNode::Operation {
+                num_type: Some(NumericType::FiniteField),
+                operator: Some(Operator::Add),
+                output: Some("x".to_string()),
+                operands: vec![
+                    Expression::Atomic(Atomic::Variable("x".to_string())),
+                    Expression::Atomic(Atomic::Variable("y".to_string())),
+                ],
+            }],
+            else_case: None,
+        };
+        assert_eq!(parse_if_then_else(input), Ok(("\n", expected)));
+    }
+
+    #[test]
     fn test_parse_function() {
         let input = "%%function my_function [output1 output2] [input1 input2]\nlocal.memory 10\n  ;; body\n x = ff.add y z\n\n";
         let expected = Function {
@@ -415,6 +434,16 @@ mod tests {
             },
             ],
         })));
+    }
+
+    #[test]
+    fn test_parse_loop2() {
+        // let input = "if x_1\n z = y\n if x_23\n x = y\n end\n y = x\n end";
+        // let input = "if x_1\nx_23 = ff.eqz x_22\nif x_23\nerror 0\nend\nff.store i64.3 x_37\ncontinue\nend";
+        let input = "if x_23\n error 0\nend";
+        let res = parse_if_then_else(input);
+        println!("{:?}", res);
+        assert!(res.is_ok());
     }
 
     #[test]
