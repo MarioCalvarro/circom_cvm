@@ -30,6 +30,16 @@ pub struct Function {
     pub body: Vec<ASTNode>,
 }
 
+impl Function {
+    //TODO
+    pub fn get_input_types(&self) -> Vec<NumericType> {
+        self.inputs.iter().map(|_| NumericType::Integer).collect()
+    }
+    pub fn get_output_types(&self) -> Vec<NumericType> {
+        self.outputs.iter().map(|_| NumericType::Integer).collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Template {
     pub name: String,

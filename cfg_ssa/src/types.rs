@@ -8,6 +8,13 @@ pub enum NumericType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Variable(NumericType),
+    Function(Vec<NumericType>, Vec<NumericType>),
+}
+
+//TODO: Cambiar a dos tipos de operadores
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operator {
     //Arithmetic
     Add,

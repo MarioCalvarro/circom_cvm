@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 pub mod ast;
 pub mod types;
+mod type_checking;
 
 use crate::types::*;
 
