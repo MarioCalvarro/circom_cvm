@@ -27,7 +27,6 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
         value(Operator::SetCmpInRun, tag("set_cmp_input_run")),
         value(Operator::SetCmpIn, tag("set_cmp_input")),
         value(Operator::GetCmpSignal, tag("get_cmp_signal")),
-        value(Operator::SetCmpSignal, tag("set_cmp_signal")),
         value(Operator::GetSignal, tag("get_signal")),
         value(Operator::SetSignal, tag("set_signal")),
 

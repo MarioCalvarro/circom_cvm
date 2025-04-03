@@ -58,7 +58,6 @@ pub enum Operator {
     GetSignal,
     GetCmpSignal,
     SetSignal,
-    SetCmpSignal,
     SetCmpIn,
     SetCmpInCnt,
     SetCmpInRun,
