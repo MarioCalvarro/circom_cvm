@@ -67,6 +67,11 @@ pub enum Operator {
     Return,
     Call,
 
+    //Templates
+    GetTemplateId,
+    GetTemplateSignalPosition,
+    GetTemplateSignalSize,
+
     //Misc
     Error,
     //TODO: outs

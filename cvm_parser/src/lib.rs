@@ -105,12 +105,23 @@ fn parse_function(input: &str) -> IResult<&str, Function> {
     }))
 }
 
+fn parse_id_template(input: &str) -> Result<usize, nom::Err<nom::error::Error<&str>>> {
+    let (_, id) = preceded(preceded(alphanumeric1, tag("_")), usize).parse(input)?;
+    Ok(id)
+}
+
 fn parse_template(input: &str) -> IResult<&str, Template> {
     let (input, _) = tag("%%template").parse(input)?;
     let (input, _) = space1(input)?;
 
     let (input, name) = parse_variable_name(input)?;
     let (input, _) = space0(input)?;
+
+    let id = parse_id_template(&name);
+    let id = match id {
+        Ok(id) => id,
+        Err(_) => return Err(nom::Err::Failure(nom::error::Error::new(input, nom::error::ErrorKind::Fail))),
+    };
 
     let (input, outputs) = delimited(tag("["),
     delimited(space0, separated_list0(space1, alphanumeric1), space0), 
@@ -129,14 +140,14 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     tag("]")).parse(input)?;
     let (input, _) = space0(input)?;
 
-    //TODO: Possible future change to a list
     let (input, components) = delimited(tag("["),
-    delimited(space0, usize, space0),
+    delimited(space0, separated_list0(space1, usize), space0),
     tag("]")).parse(input)?;
 
     let (input, body) = many0(parse_ast_node).parse(input)?;
 
     Ok((input, Template {
+        id,
         name,
         outputs,
         inputs,
@@ -374,16 +385,23 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_id_template() {
+        let input = "template_20";
+        assert_eq!(parse_id_template(input), Ok(20));
+    }
+
+    #[test]
     fn test_parse_template() {
-        let input = "%%template template_name [output] [input1 input2] [10] [5]\n  ;; body\n x = ff.add y z\n ;;Me jodes?\n loop\n ;;Y tu?\n y = ff.mul x z\n end\n if condition\n  z = ff.sub x y\n else\n  z = ff.div x y\n end\n";
+        let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n x = ff.add y z\n ;;Me jodes?\n loop\n ;;Y tu?\n y = ff.mul x z\n end\n if condition\n  z = ff.sub x y\n else\n  z = ff.div x y\n end\n";
         let res = parse_template(input);
         println!("{:?}", res);
         assert_eq!(res, Ok(("", Template {
-            name: "template_name".to_string(),
+            id: 0,
+            name: "template_0".to_string(),
             outputs: vec!["output".to_string()],
             inputs: vec!["input1".to_string(), "input2".to_string()],
             signals: 10,
-            components: 5,
+            components: vec![5, 3, 2],
             body: vec![
             ASTNode::Operation {
                 num_type: Some(NumericType::FiniteField),
@@ -448,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_parse_program() {
-        let input = fs::read_to_string("test/sum_test.cvm").unwrap();
+        let input = fs::read_to_string("test/test_program.cvm").unwrap();
         let res = parse_program(&input);
         let mut file = fs::File::create("test/output.txt").unwrap();
         writeln!(file, "{:?}", res).unwrap();

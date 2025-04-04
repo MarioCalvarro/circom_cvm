@@ -42,12 +42,12 @@ impl Function {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Template {
+    pub id: usize,
     pub name: String,
-    //TODO: What information do we need about the templates?
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
     pub signals: usize,
-    pub components: usize,
+    pub components: Vec<usize>,
     pub body: Vec<ASTNode>,
 }
 

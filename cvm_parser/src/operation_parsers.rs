@@ -22,6 +22,11 @@ fn parse_numeric_type(input: &str) -> IResult<&str, NumericType> {
 
 fn parse_operator(input: &str) -> IResult<&str, Operator> {
     alt([
+        value(Operator::GetTemplateSignalPosition, tag("get_template_signal_position")),
+        value(Operator::GetTemplateSignalSize, tag("get_template_signal_size")),
+        value(Operator::GetTemplateId, tag("get_template_id")),
+
+
         value(Operator::SetCmpInCntCheck, tag("set_cmp_input_cnt_check")),
         value(Operator::SetCmpInCnt, tag("set_cmp_input_cnt")),
         value(Operator::SetCmpInRun, tag("set_cmp_input_run")),
@@ -67,7 +72,11 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
     .parse(input)
 }
 
-fn parse_constant(input: &str) -> IResult<&str, ConstantType> {
+fn parse_constant_number(input: &str) -> IResult<&str, ConstantType> {
+    map(i64, ConstantType::I64).parse(input)
+}
+
+fn parse_constant_with_type(input: &str) -> IResult<&str, ConstantType> {
     let (input, num_type) = parse_numeric_type(input)?;
     let (input, _) = tag(".").parse(input)?;
     match num_type {
@@ -83,11 +92,15 @@ fn parse_constant(input: &str) -> IResult<&str, ConstantType> {
     }
 }
 
+fn parse_constant(input: &str) -> IResult<&str, ConstantType> {
+    alt((parse_constant_number, parse_constant_with_type)).parse(input)
+}
+
 fn parse_atomic(input: &str) -> IResult<&str, Atomic> {
     alt((map(parse_constant, Atomic::Constant), map(parse_variable_name, Atomic::Variable))).parse(input)
 }
 
-//TODO: Change this to parse an variable name or a i64 (no ff)
+//TODO?: Change this to parse an variable name or a i64 (no ff)
 fn parse_two_atomics(input: &str) -> IResult<&str, (Atomic, Atomic)> {
     delimited(
         tag("("),
@@ -276,6 +289,10 @@ mod tests {
         assert_eq!(parse_operator("set_cmp_input_run"), Ok(("", Operator::SetCmpInRun)));
         assert_eq!(parse_operator("set_cmp_input_cnt_check"), Ok(("", Operator::SetCmpInCntCheck)));
 
+        assert_eq!(parse_operator("get_template_signal_position"), Ok(("", Operator::GetTemplateSignalPosition)));
+        assert_eq!(parse_operator("get_template_signal_size"), Ok(("", Operator::GetTemplateSignalSize)));
+        assert_eq!(parse_operator("get_template_id"), Ok(("", Operator::GetTemplateId)));
+
         assert_eq!(parse_operator("return"), Ok(("", Operator::Return)));
         assert_eq!(parse_operator("call"), Ok(("", Operator::Call)));
         assert_eq!(parse_operator("error"), Ok(("", Operator::Error)));
@@ -397,6 +414,20 @@ mod tests {
                     operands: vec![
                         Expression::Atomic(Atomic::Constant(ConstantType::I64(42))),
                         Expression::Atomic(Atomic::Constant(ConstantType::I64(64))),
+                    ]
+                }
+            ))
+        );
+        assert_eq!(
+            parse_operation_no_output("error 0"),
+            Ok((
+                "",
+                ASTNode::Operation {
+                    num_type: None,
+                    operator: Some(Operator::Error),
+                    output: None,
+                    operands: vec![
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
                     ]
                 }
             ))
@@ -540,6 +571,20 @@ mod tests {
                     operator: None,
                     output: Some("res".to_string()),
                     operands: vec![Expression::Atomic(Atomic::Variable("x".to_string()))]
+                }
+            ))
+        );
+        assert_eq!(
+            parse_operation("error 0"),
+            Ok((
+                "",
+                ASTNode::Operation {
+                    num_type: None,
+                    operator: Some(Operator::Error),
+                    output: None,
+                    operands: vec![
+                        Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
+                    ]
                 }
             ))
         );
