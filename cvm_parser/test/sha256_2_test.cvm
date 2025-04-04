@@ -2141,7 +2141,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; compute bucket
@@ -2180,7 +2180,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; store bucket. Line 83
 ;; getting src
 ;; compute bucket
@@ -2288,7 +2288,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2316,7 +2316,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2336,7 +2336,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; store bucket. Line 85
 ;; getting src
 ;; compute bucket
@@ -2411,7 +2411,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2439,7 +2439,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; store bucket. Line 86
 ;; getting src
 ;; compute bucket
@@ -2807,7 +2807,7 @@ continue
 end
 end
 ;; end of loop bucket
-// return bucket
+;; return bucket
 ;; load bucket
 ;; end of load bucket
 x_220 = ff.load i64.784
@@ -2840,7 +2840,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2861,8 +2861,8 @@ continue
 end
 break
 end
-// end call bucket
-// return bucket
+;; end call bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; load bucket
@@ -2907,7 +2907,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2928,8 +2928,8 @@ continue
 end
 break
 end
-// end call bucket
-// return bucket
+;; end call bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; load bucket
@@ -2974,7 +2974,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -2995,7 +2995,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -3016,8 +3016,8 @@ continue
 end
 break
 end
-// end call bucket
-// return bucket
+;; end call bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; load bucket
@@ -3038,7 +3038,7 @@ x_267 = ff.bxor x_265 x_266
 return x_267 1
 %%function Ch_4 [ff 0 ] [ ff 0  ff 0  ff 0 ]
 local.memory 3
-// return bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; load bucket
@@ -3070,7 +3070,7 @@ x_275 = ff.bxor x_270 x_274
 return x_275 1
 %%function sha256K_5 [ff 0 ] [ ff 0 ]
 local.memory 65
-// return bucket
+;; return bucket
 ;; load bucket
 ;; compute bucket
 ;; compute bucket
@@ -3112,7 +3112,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -3133,7 +3133,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; start of call bucket
 ;; load bucket
 ;; end of load bucket
@@ -3154,8 +3154,8 @@ continue
 end
 break
 end
-// end call bucket
-// return bucket
+;; end call bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; load bucket
@@ -3176,7 +3176,7 @@ x_297 = ff.bxor x_295 x_296
 return x_297 1
 %%function Maj_7 [ff 0 ] [ ff 0  ff 0  ff 0 ]
 local.memory 3
-// return bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; compute bucket
@@ -3218,7 +3218,7 @@ x_308 = ff.bxor x_304 x_307
 return x_308 1
 %%function rrot_8 [ff 0 ] [ ff 0  ff 0 ]
 local.memory 2
-// return bucket
+;; return bucket
 ;; compute bucket
 ;; compute bucket
 ;; compute bucket
@@ -3252,7 +3252,7 @@ x_316 = ff.bor x_311 x_315
 x_317 = ff.band x_316 ff.4294967295
 ;; end of compute bucket
 return x_317 1
-%%template Bits2Num_0 [ ff 1 216] [ ff 0 ] [217] [0]
+%%template Bits2Num_0 [ ff 1 216] [ ff 0 ] [217] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -3360,7 +3360,7 @@ x_334 = ff.load i64.1
 set_signal i64.0 x_334
 ;; end of store bucket
 
-%%template Num2Bits_1 [ ff 0 ] [ ff 1 216] [217] [0]
+%%template Num2Bits_1 [ ff 0 ] [ ff 1 216] [217] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -3564,7 +3564,7 @@ error 0
 end
 ;; end of assert bucket
 
-%%template RotR_2 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_2 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -3653,7 +3653,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_3 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_3 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -3742,7 +3742,7 @@ end
 end
 ;; end of loop bucket
 
-%%template ShR_4 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template ShR_4 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -3863,7 +3863,7 @@ end
 end
 ;; end of loop bucket
 
-%%template Xor3_5 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [0]
+%%template Xor3_5 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -4151,7 +4151,7 @@ end
 end
 ;; end of loop bucket
 
-%%template SmallSigma_6 [ ff 1 32] [ ff 1 32] [64] [4]
+%%template SmallSigma_6 [ ff 1 32] [ ff 1 32] [64] [ 2 3 4 5 ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -4532,7 +4532,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_7 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_7 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -4621,7 +4621,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_8 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_8 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -4710,7 +4710,7 @@ end
 end
 ;; end of loop bucket
 
-%%template ShR_9 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template ShR_9 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -4831,7 +4831,7 @@ end
 end
 ;; end of loop bucket
 
-%%template SmallSigma_10 [ ff 1 32] [ ff 1 32] [64] [4]
+%%template SmallSigma_10 [ ff 1 32] [ ff 1 32] [64] [ 7 8 9 5 ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -5212,7 +5212,7 @@ end
 end
 ;; end of loop bucket
 
-%%template BinSum_11 [ ff 2 4 32] [ ff 1 34] [162] [0]
+%%template BinSum_11 [ ff 2 4 32] [ ff 1 34] [162] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -5575,7 +5575,7 @@ error 0
 end
 ;; end of assert bucket
 
-%%template SigmaPlus_12 [ ff 1 32 ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [3]
+%%template SigmaPlus_12 [ ff 1 32 ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [ 6 10 11 ]
 ;; store bucket. Line 30
 ;; getting src
 ;; getting dest
@@ -5957,7 +5957,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_13 [] [ ff 1 32] [32] [0]
+%%template K_13 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6026,7 +6026,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_14 [] [ ff 1 32] [32] [0]
+%%template K_14 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6095,7 +6095,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_15 [] [ ff 1 32] [32] [0]
+%%template K_15 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6164,7 +6164,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_16 [] [ ff 1 32] [32] [0]
+%%template K_16 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6233,7 +6233,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_17 [] [ ff 1 32] [32] [0]
+%%template K_17 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6302,7 +6302,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_18 [] [ ff 1 32] [32] [0]
+%%template K_18 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6371,7 +6371,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_19 [] [ ff 1 32] [32] [0]
+%%template K_19 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6440,7 +6440,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_20 [] [ ff 1 32] [32] [0]
+%%template K_20 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6509,7 +6509,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_21 [] [ ff 1 32] [32] [0]
+%%template K_21 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6578,7 +6578,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_22 [] [ ff 1 32] [32] [0]
+%%template K_22 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6647,7 +6647,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_23 [] [ ff 1 32] [32] [0]
+%%template K_23 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6716,7 +6716,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_24 [] [ ff 1 32] [32] [0]
+%%template K_24 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6785,7 +6785,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_25 [] [ ff 1 32] [32] [0]
+%%template K_25 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6854,7 +6854,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_26 [] [ ff 1 32] [32] [0]
+%%template K_26 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6923,7 +6923,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_27 [] [ ff 1 32] [32] [0]
+%%template K_27 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -6992,7 +6992,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_28 [] [ ff 1 32] [32] [0]
+%%template K_28 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7061,7 +7061,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_29 [] [ ff 1 32] [32] [0]
+%%template K_29 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7130,7 +7130,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_30 [] [ ff 1 32] [32] [0]
+%%template K_30 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7199,7 +7199,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_31 [] [ ff 1 32] [32] [0]
+%%template K_31 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7268,7 +7268,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_32 [] [ ff 1 32] [32] [0]
+%%template K_32 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7337,7 +7337,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_33 [] [ ff 1 32] [32] [0]
+%%template K_33 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7406,7 +7406,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_34 [] [ ff 1 32] [32] [0]
+%%template K_34 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7475,7 +7475,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_35 [] [ ff 1 32] [32] [0]
+%%template K_35 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7544,7 +7544,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_36 [] [ ff 1 32] [32] [0]
+%%template K_36 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7613,7 +7613,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_37 [] [ ff 1 32] [32] [0]
+%%template K_37 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7682,7 +7682,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_38 [] [ ff 1 32] [32] [0]
+%%template K_38 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7751,7 +7751,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_39 [] [ ff 1 32] [32] [0]
+%%template K_39 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7820,7 +7820,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_40 [] [ ff 1 32] [32] [0]
+%%template K_40 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7889,7 +7889,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_41 [] [ ff 1 32] [32] [0]
+%%template K_41 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -7958,7 +7958,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_42 [] [ ff 1 32] [32] [0]
+%%template K_42 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8027,7 +8027,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_43 [] [ ff 1 32] [32] [0]
+%%template K_43 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8096,7 +8096,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_44 [] [ ff 1 32] [32] [0]
+%%template K_44 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8165,7 +8165,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_45 [] [ ff 1 32] [32] [0]
+%%template K_45 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8234,7 +8234,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_46 [] [ ff 1 32] [32] [0]
+%%template K_46 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8303,7 +8303,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_47 [] [ ff 1 32] [32] [0]
+%%template K_47 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8372,7 +8372,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_48 [] [ ff 1 32] [32] [0]
+%%template K_48 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8441,7 +8441,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_49 [] [ ff 1 32] [32] [0]
+%%template K_49 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8510,7 +8510,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_50 [] [ ff 1 32] [32] [0]
+%%template K_50 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8579,7 +8579,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_51 [] [ ff 1 32] [32] [0]
+%%template K_51 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8648,7 +8648,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_52 [] [ ff 1 32] [32] [0]
+%%template K_52 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8717,7 +8717,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_53 [] [ ff 1 32] [32] [0]
+%%template K_53 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8786,7 +8786,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_54 [] [ ff 1 32] [32] [0]
+%%template K_54 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8855,7 +8855,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_55 [] [ ff 1 32] [32] [0]
+%%template K_55 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8924,7 +8924,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_56 [] [ ff 1 32] [32] [0]
+%%template K_56 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -8993,7 +8993,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_57 [] [ ff 1 32] [32] [0]
+%%template K_57 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9062,7 +9062,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_58 [] [ ff 1 32] [32] [0]
+%%template K_58 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9131,7 +9131,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_59 [] [ ff 1 32] [32] [0]
+%%template K_59 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9200,7 +9200,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_60 [] [ ff 1 32] [32] [0]
+%%template K_60 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9269,7 +9269,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_61 [] [ ff 1 32] [32] [0]
+%%template K_61 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9338,7 +9338,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_62 [] [ ff 1 32] [32] [0]
+%%template K_62 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9407,7 +9407,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_63 [] [ ff 1 32] [32] [0]
+%%template K_63 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9476,7 +9476,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_64 [] [ ff 1 32] [32] [0]
+%%template K_64 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9545,7 +9545,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_65 [] [ ff 1 32] [32] [0]
+%%template K_65 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9614,7 +9614,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_66 [] [ ff 1 32] [32] [0]
+%%template K_66 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9683,7 +9683,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_67 [] [ ff 1 32] [32] [0]
+%%template K_67 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9752,7 +9752,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_68 [] [ ff 1 32] [32] [0]
+%%template K_68 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9821,7 +9821,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_69 [] [ ff 1 32] [32] [0]
+%%template K_69 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9890,7 +9890,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_70 [] [ ff 1 32] [32] [0]
+%%template K_70 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -9959,7 +9959,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_71 [] [ ff 1 32] [32] [0]
+%%template K_71 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10028,7 +10028,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_72 [] [ ff 1 32] [32] [0]
+%%template K_72 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10097,7 +10097,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_73 [] [ ff 1 32] [32] [0]
+%%template K_73 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10166,7 +10166,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_74 [] [ ff 1 32] [32] [0]
+%%template K_74 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10235,7 +10235,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_75 [] [ ff 1 32] [32] [0]
+%%template K_75 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10304,7 +10304,7 @@ end
 end
 ;; end of loop bucket
 
-%%template K_76 [] [ ff 1 32] [32] [0]
+%%template K_76 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10373,7 +10373,7 @@ end
 end
 ;; end of loop bucket
 
-%%template Ch_t_77 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [128] [0]
+%%template Ch_t_77 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [128] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10515,7 +10515,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_78 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_78 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10604,7 +10604,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_79 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_79 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10693,7 +10693,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_80 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_80 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -10782,7 +10782,7 @@ end
 end
 ;; end of loop bucket
 
-%%template BigSigma_81 [ ff 1 32] [ ff 1 32] [64] [4]
+%%template BigSigma_81 [ ff 1 32] [ ff 1 32] [64] [ 78 79 80 5 ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -11163,7 +11163,7 @@ end
 end
 ;; end of loop bucket
 
-%%template BinSum_82 [ ff 2 5 32] [ ff 1 35] [195] [0]
+%%template BinSum_82 [ ff 2 5 32] [ ff 1 35] [195] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -11526,7 +11526,7 @@ error 0
 end
 ;; end of assert bucket
 
-%%template T1_83 [ ff 1 32 ff 1 32 ff 1 32 ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [224] [3]
+%%template T1_83 [ ff 1 32 ff 1 32 ff 1 32 ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [224] [ 77 81 82 ]
 ;; store bucket. Line 34
 ;; getting src
 ;; getting dest
@@ -12026,7 +12026,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_84 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_84 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -12115,7 +12115,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_85 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_85 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -12204,7 +12204,7 @@ end
 end
 ;; end of loop bucket
 
-%%template RotR_86 [ ff 1 32] [ ff 1 32] [64] [0]
+%%template RotR_86 [ ff 1 32] [ ff 1 32] [64] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -12293,7 +12293,7 @@ end
 end
 ;; end of loop bucket
 
-%%template BigSigma_87 [ ff 1 32] [ ff 1 32] [64] [4]
+%%template BigSigma_87 [ ff 1 32] [ ff 1 32] [64] [ 84 85 86 5 ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -12674,7 +12674,7 @@ end
 end
 ;; end of loop bucket
 
-%%template Maj_t_88 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [0]
+%%template Maj_t_88 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [160] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -12902,7 +12902,7 @@ end
 end
 ;; end of loop bucket
 
-%%template BinSum_89 [ ff 2 2 32] [ ff 1 33] [97] [0]
+%%template BinSum_89 [ ff 2 2 32] [ ff 1 33] [97] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -13265,7 +13265,7 @@ error 0
 end
 ;; end of assert bucket
 
-%%template T2_90 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [128] [3]
+%%template T2_90 [ ff 1 32 ff 1 32 ff 1 32] [ ff 1 32] [128] [ 87 88 89 ]
 ;; store bucket. Line 30
 ;; getting src
 ;; getting dest
@@ -13639,7 +13639,7 @@ end
 end
 ;; end of loop bucket
 
-%%template Sha256compression_91 [ ff 1 256 ff 1 512] [ ff 1 256] [19712] [376]
+%%template Sha256compression_91 [ ff 1 256 ff 1 512] [ ff 1 256] [19712] [ 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 83 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 89 ]
 ;; store bucket. Line 44
 ;; getting src
 ;; getting dest
@@ -14937,7 +14937,7 @@ continue
 end
 break
 end
-// end call bucket
+;; end call bucket
 ;; store bucket. Line 46
 ;; getting src
 ;; getting dest
@@ -19012,7 +19012,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_92 [] [ ff 1 32] [32] [0]
+%%template H_92 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19081,7 +19081,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_93 [] [ ff 1 32] [32] [0]
+%%template H_93 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19150,7 +19150,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_94 [] [ ff 1 32] [32] [0]
+%%template H_94 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19219,7 +19219,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_95 [] [ ff 1 32] [32] [0]
+%%template H_95 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19288,7 +19288,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_96 [] [ ff 1 32] [32] [0]
+%%template H_96 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19357,7 +19357,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_97 [] [ ff 1 32] [32] [0]
+%%template H_97 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19426,7 +19426,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_98 [] [ ff 1 32] [32] [0]
+%%template H_98 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19495,7 +19495,7 @@ end
 end
 ;; end of loop bucket
 
-%%template H_99 [] [ ff 1 32] [32] [0]
+%%template H_99 [] [ ff 1 32] [32] [ ]
 ;; store bucket. Line 0
 ;; getting src
 ;; getting dest
@@ -19564,7 +19564,7 @@ end
 end
 ;; end of loop bucket
 
-%%template Sha256_2_100 [ ff 0  ff 0 ] [ ff 0 ] [3] [12]
+%%template Sha256_2_100 [ ff 0  ff 0 ] [ ff 0 ] [3] [ 0 1 1 91 92 93 94 95 96 97 98 99 ]
 ;; store bucket. Line 30
 ;; getting src
 ;; getting dest
@@ -20260,7 +20260,7 @@ x_3348 = get_cmp_signal i64.0 i64.0
 set_signal i64.0 x_3348
 ;; end of store bucket
 
-%%template Main_101 [ ff 0  ff 0 ] [ ff 0 ] [3] [1]
+%%template Main_101 [ ff 0  ff 0 ] [ ff 0 ] [3] [ 100 ]
 ;; store bucket. Line 12
 ;; getting src
 ;; load bucket

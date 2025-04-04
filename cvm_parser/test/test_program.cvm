@@ -1,0 +1,56 @@
+;; Prime value
+%%prime 21888242871839275222246405745257275088548364400416034343698204186575808495617
+
+
+;; Memory of signals
+%%signals 200
+
+
+;; Heap of components
+%%components_heap 19
+
+
+;; Types (for each field we store name type offset size nDims dims)
+
+
+;; Main template
+%%start A_3
+
+
+;; Component creation mode (implicit/explicit)
+%%components explicit
+
+
+;; Witness (signal list)
+%%witness 0 1 2 3 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 135
+
+
+%%template SimpleLoop_0 [ ff 0 ] [ ff 1 ] [10] [ ]
+ff.store i64.0 ff.0
+loop
+    x_0 = ff.load i64.0
+    x_1 = ff.lt x_0 ff.10
+    if x_1
+        x_2 = ff.load i64.0
+        x_3 = ff.add x_2 ff.1
+        ff.store i64.0 x_3
+
+        x_4 = ff.div x_3 ff.2
+        x_5 = ff.eq x_4 ff.0
+        if x_5
+            x_6 = ff.mul x_3 ff.2
+            ff.store i64.1 x_6
+        else
+            x_7 = ff.sub x_3 ff.1
+            ff.store i64.1 x_7
+        end
+
+        x_8 = ff.load i64.1
+        x_9 = ff.gt x_8 ff.5
+        if x_9
+            x_10 = ff.div x_8 ff.2
+            ff.store i64.1 x_10
+        end
+        continue
+    end
+end
