@@ -465,6 +465,7 @@ impl TypeChecker {
             }
         }
         else {
+            let mut var_type = Type::Variable(NumericType::FiniteField);
             match operator {
                 Some(Operator::GetSignal) => {
                     if operands.len() != 1 {
@@ -500,6 +501,24 @@ impl TypeChecker {
                         }
                     }
                 }
+                Some(Operator::GetTemplateId) => {
+                    if operands.len() != 1 {
+                        return Err(format!(
+                            "Operator {:?} requires exactly 1 operand, but {} were provided.",
+                            operator,
+                            operands.len()
+                        ));
+                    }
+                    if let Some(op) = operands.first() {
+                        if self.type_expression(op)? != Type::Variable(NumericType::Integer) {
+                            return Err(format!(
+                                "Operand {:?} does not match the required type Integer.",
+                                op
+                            ));
+                        }
+                    }
+                    var_type = Type::Variable(NumericType::Integer);
+                }
                 Some(Operator::SetSignal) => {
                     if operands.len() != 2 {
                         return Err(format!(
@@ -520,7 +539,7 @@ impl TypeChecker {
                                 "Second operand {:?} does not match the required type FiniteField.",
                                 s
                             ));
-                        } 
+                        }
                     }
                 }
                 Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun) | Some(Operator::SetCmpInCntCheck) => {
@@ -531,7 +550,7 @@ impl TypeChecker {
                             operands.len()
                         ));
                     }
-                    if let (Some(f), Some(s), Some(t)) = (operands.get(0), operands.get(1), operands.get(2)) {  
+                    if let (Some(f), Some(s), Some(t)) = (operands.get(0), operands.get(1), operands.get(2)) {
                         if self.type_expression(f)? != Type::Variable(NumericType::Integer) {
                             return Err(format!(
                                 "First operand {:?} does not match the required type Integer.",
@@ -552,6 +571,30 @@ impl TypeChecker {
                         }
                     }
                 }
+                Some(Operator::GetTemplateSignalSize) | Some(Operator::GetTemplateSignalPosition) => {
+                    if operands.len() != 2 {
+                        return Err(format!(
+                            "Operator {:?} requires exactly 2 operand, but {} were provided.",
+                            operator,
+                            operands.len()
+                        ));
+                    }
+                    if let (Some(f), Some(s)) = (operands.get(0), operands.get(1)) {
+                        if self.type_expression(f)? != Type::Variable(NumericType::Integer) {
+                            return Err(format!(
+                                "First operand {:?} does not match the required type Integer.",
+                                f
+                            ));
+                        }
+                        if self.type_expression(s)? != Type::Variable(NumericType::Integer) {
+                            return Err(format!(
+                                "Second operand {:?} does not match the required type Integer.",
+                                s
+                            ));
+                        }
+                    }
+                    var_type = Type::Variable(NumericType::Integer);
+                }
                 Some(_) => {
                     return Err(format!(
                         "Operator {:?} requires a numeric type, but none was provided.",
@@ -560,10 +603,22 @@ impl TypeChecker {
                 },
                 None => {
                     //Case x = y
+                    if operands.len() != 1 {
+                        return Err("Assignment of a variable to another variable must only have one operand (the value).".to_string());
+                    }
+                    if let Some(Expression::Atomic(Atomic::Variable(variable))) = operands.first() {
+                        let input_type = self.type_enviroment.iter().rev()
+                        .find_map(|env| env.get(variable));
+                        var_type = input_type
+                            .ok_or(format!("Variable {} not found in environment", variable))?
+                            .clone();
+                    } else {
+                        return Err("Operand must be a variable for variable assignment.".to_string());
+                    }
                 }
             }
             if let (Some(o), Some(env)) = (output, self.type_enviroment.last_mut()) {
-                env.insert(o.clone(), Type::Variable(NumericType::FiniteField));
+                env.insert(o.clone(), var_type);
             }
         }
         Ok(())
