@@ -100,7 +100,6 @@ fn parse_atomic(input: &str) -> IResult<&str, Atomic> {
     alt((map(parse_constant, Atomic::Constant), map(parse_variable_name, Atomic::Variable))).parse(input)
 }
 
-//TODO?: Change this to parse an variable name or a i64 (no ff)
 fn parse_two_atomics(input: &str) -> IResult<&str, (Atomic, Atomic)> {
     delimited(
         tag("("),

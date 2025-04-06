@@ -13,7 +13,6 @@ pub enum Type {
     Function(Vec<NumericType>, Vec<NumericType>),
 }
 
-//TODO: Cambiar a dos tipos de operadores
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operator {
     //Arithmetic
