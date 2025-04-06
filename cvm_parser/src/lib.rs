@@ -182,7 +182,7 @@ fn parse_ast_field(input: &str) -> IResult<&str, ASTField> {
     )))).parse(input)
 }
 
-fn parse_program(input: &str) -> IResult<&str, AST> {
+pub fn parse_program(input: &str) -> IResult<&str, AST> {
     let (remaining_input, fields) = many0(parse_ast_field).parse(input)?;
 
     // Temporary storage for each field

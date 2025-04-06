@@ -248,6 +248,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cvm_integration_tests"
+version = "0.1.0"
+dependencies = [
+ "cfg_ssa",
+ "cvm_parser",
+]
+
+[[package]]
 name = "cvm_parser"
 version = "0.1.0"
 dependencies = [

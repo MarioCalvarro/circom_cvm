@@ -13,5 +13,6 @@ members = [
     "code_producers",
     "dag",
     "cfg_ssa",
-    "cvm_parser"
+    "cvm_parser",
+    "cvm_integration_tests"
 ]

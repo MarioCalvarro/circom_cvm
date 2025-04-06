@@ -1,0 +1,8 @@
+[package]
+name = "cvm_integration_tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cfg_ssa = { path = "../cfg_ssa" }
+cvm_parser = { path = "../cvm_parser" }
