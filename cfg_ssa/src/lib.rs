@@ -2,7 +2,9 @@ use std::collections::HashSet;
 
 pub mod ast;
 pub mod types;
-mod type_checking;
+//TODO: This should not be public, but i want to test first
+pub mod type_checking;
+mod tests;
 
 use crate::types::*;
 

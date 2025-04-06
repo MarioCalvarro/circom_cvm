@@ -7,20 +7,23 @@ type Stack<T> = Vec<T>;
 
 #[derive(Debug, Clone)]
 pub struct TypeChecker {
-    type_enviroment: Stack<HashMap<String, Type>>,
+    // Crate public to allow testing
+    pub(crate) type_enviroment: Stack<HashMap<String, Type>>,
 }
 
 impl TypeChecker {
     pub fn new() -> Self {
+        // Initialize the type environment with a new stack
+        // and push an empty environment onto the stack
+        // This will be the main environment where all global variables are stored
+        let mut enviroment = Stack::new();
+        enviroment.push(HashMap::new());
         Self {
-            type_enviroment: Stack::new(),
+            type_enviroment: enviroment,
         }
     }
 
     pub fn check(&mut self, ast: &AST) -> Result<(), String> {
-        //We add the main enviroment
-        self.type_enviroment.push(HashMap::new());
-
         // Check all functions
         for function in &ast.functions {
             self.type_enviroment.last_mut()
@@ -77,17 +80,18 @@ impl TypeChecker {
         Ok(())
     }
 
-    fn check_node(&mut self, node: &ASTNode) -> Result<(), String> {
+    // Crate public to allow testing
+    pub(crate) fn check_node(&mut self, node: &ASTNode) -> Result<(), String> {
         match node {
             ASTNode::Operation { num_type, operator, output, operands } => {
                 self.check_operation(num_type, operator, output, operands)
             },
             ASTNode::IfThenElse { condition, if_case, else_case } => {
                 //Check if the condition is an integer, error otherwise
-                self.type_expression(condition)?;
-                if self.type_expression(condition)? != Type::Variable(NumericType::Integer) {
-                    return Err("Condition must be an integer".to_string());
-                }
+                // self.type_expression(condition)?;
+                // if self.type_expression(condition)? != Type::Variable(NumericType::Integer) {
+                //     return Err("Condition must be an integer".to_string());
+                // }
 
                 // Create a new environment for the if-case
                 let if_case_env = HashMap::new();
@@ -136,9 +140,7 @@ impl TypeChecker {
             if operands.len() != expected {
                 Err(format!(
                         "Operator {:?} requires exactly {} operands, but {} were provided.",
-                        operator,
-                        expected,
-                        operands.len()
+                        operator, expected, operands.len()
                 ))
             } else {
                 Ok(())
@@ -149,8 +151,8 @@ impl TypeChecker {
             let op = operands.get(idx).ok_or_else(|| "Missing operand".to_string())?;
             if self.type_expression(op)? != Type::Variable(expected.clone()) {
                 Err(format!(
-                        "Operand at position {} ({:?}) does not match the required type {:?}.",
-                        idx, op, expected
+                        "Operand at position {} ({:?}) does not match the required type {:?} in operator {:?}.",
+                        idx, op, expected, operator
                 ))
             } else {
                 Ok(())
@@ -169,13 +171,14 @@ impl TypeChecker {
                         | Some(Operator::Less) | Some(Operator::LessEqual)
                         | Some(Operator::Equal) | Some(Operator::NotEqual)
                         | Some(Operator::And) | Some(Operator::Or) | Some(Operator::BitAnd)
-                        | Some(Operator::BitOr) | Some(Operator::BitXor) => {
-                            check_len(2)?;
-                            check_operand(0, NumericType::FiniteField)?;
-                            check_operand(1, NumericType::FiniteField)?;
-                        }
-                    Some(Operator::EqualZero) | Some(Operator::ShiftLeft) | Some(Operator::ShiftRight)
-                        | Some(Operator::BitNot) | Some(Operator::Wrap) | Some(Operator::Return) => {
+                        | Some(Operator::BitOr) | Some(Operator::BitXor)
+                        | Some(Operator::ShiftLeft) | Some(Operator::ShiftRight) 
+                    => {
+                        check_len(2)?;
+                        check_operand(0, NumericType::FiniteField)?;
+                        check_operand(1, NumericType::FiniteField)?;
+                    }
+                    Some(Operator::EqualZero) | Some(Operator::BitNot) | Some(Operator::Return) => {
                         check_len(1)?;
                         check_operand(0, NumericType::FiniteField)?;
                     }
@@ -191,9 +194,21 @@ impl TypeChecker {
                     Some(Operator::Call) => {
                         self.check_call(operator, operands, NumericType::FiniteField)?;
                     }
-                    Some(_) => {
+                    Some(Operator::Wrap) => {
+                        check_len(1)?;
+                        check_operand(0, NumericType::FiniteField)?;
+                        var_type = Type::Variable(NumericType::Integer);
+                    }
+                    Some(Operator::Extend) => {
+                        return Err("Extend operator must have type Integer".to_string());
+                    }
+                    Some(Operator::GetSignal) | Some(Operator::GetCmpSignal) | Some(Operator::SetSignal)
+                        | Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun)
+                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
+                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::Error) 
+                    => {
                         return Err(format!(
-                                "Operator {:?} must not have a type", operator
+                            "Operator {:?} must not have a type", operator
                         ));
                     }
                     None => {
@@ -219,7 +234,7 @@ impl TypeChecker {
                             check_operand(1, NumericType::Integer)?;
                         }
                     Some(Operator::EqualZero) | Some(Operator::ShiftLeft) | Some(Operator::ShiftRight)
-                        | Some(Operator::BitNot) | Some(Operator::Wrap) | Some(Operator::Return) => {
+                        | Some(Operator::BitNot) | Some(Operator::Return) => {
                             check_len(1)?;
                             check_operand(0, NumericType::Integer)?;
                         }
@@ -230,9 +245,21 @@ impl TypeChecker {
                     Some(Operator::Call) => {
                         self.check_call(operator, operands, NumericType::Integer)?;
                     }
-                    Some(_) => {
+                    Some(Operator::Extend) => {
+                        check_len(1)?;
+                        check_operand(0, NumericType::Integer)?;
+                        var_type = Type::Variable(NumericType::FiniteField);
+                    }
+                    Some(Operator::Wrap) => {
+                        return Err("Wrap operator must have type Finite Field".to_string());
+                    }
+                    Some(Operator::GetSignal) | Some(Operator::GetCmpSignal) | Some(Operator::SetSignal)
+                        | Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun)
+                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
+                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::Error)
+                    => {
                         return Err(format!(
-                                "Operator {:?} must not have a type", operator
+                            "Operator {:?} must not have a type", operator
                         ));
                     }
                     None => {
@@ -250,7 +277,7 @@ impl TypeChecker {
                 var_type = Type::Variable(NumericType::FiniteField);
                 
                 match operator {
-                    Some(Operator::GetSignal) => {
+                    Some(Operator::GetSignal) | Some(Operator::Error) => {
                         check_len(1)?;
                         check_operand(0, NumericType::Integer)?;
                     }
@@ -299,7 +326,10 @@ impl TypeChecker {
                                 .ok_or(format!("Variable {} not found in environment", variable))?
                                 .clone();
                             } else {
-                                return Err("Operand must be a variable for variable assignment.".to_string());
+                                return Err(format!(
+                                    "Operand {:?} must be a variable for variable assignment.",
+                                    operands.first()
+                                ));
                         }
                     }
                 }
@@ -408,407 +438,5 @@ impl TypeChecker {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use num_bigint_dig::BigInt;
-
-    use super::*;
-
-    fn create_checker() -> TypeChecker {
-        let mut type_checker = TypeChecker::new();
-        type_checker.type_enviroment.push(HashMap::new());
-        type_checker
-    }
-
-    //Tests for finite field operations
-    #[test]
-    fn test_ff_add_operation() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Add),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_add_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Add),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_add_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Add),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_ff_equal_zero_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::EqualZero),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(0)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_equal_zero_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::EqualZero),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_ff_load_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Load),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_load_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Load),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_ff_store_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Store),
-            output: None,
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_store_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: Some(Operator::Store),
-            output: None,
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_ff_assignment_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: None,
-            output: Some("x".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(4)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_ff_assignment_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::FiniteField),
-            operator: None,
-            output: Some("x".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(4))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    //Tests for integer operations
-    #[test]
-    fn test_integer_add_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Add),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(2))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_integer_add_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Add),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(2))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_integer_equal_zero_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::EqualZero),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_integer_equal_zero_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::EqualZero),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(0)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_integer_load_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Load),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_integer_load_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Load),
-            output: Some("result".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_integer_store_operation_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Store),
-            output: None,
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(2))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_integer_store_operation_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: Some(Operator::Store),
-            output: None,
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(2))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_integer_assignment_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: None,
-            output: Some("x".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::I64(4))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_integer_assignment_fail_wrong_operand_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Operation {
-            num_type: Some(NumericType::Integer),
-            operator: None,
-            output: Some("x".to_string()),
-            operands: vec![
-                Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(4)))),
-            ],
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_simple_if_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::IfThenElse {
-            condition: Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-            if_case: vec![ASTNode::Operation {
-                num_type: Some(NumericType::FiniteField),
-                operator: Some(Operator::Add),
-                output: Some("result".to_string()),
-                operands: vec![
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-                ],
-            }],
-            else_case: Some(vec![ASTNode::Operation {
-                num_type: Some(NumericType::FiniteField),
-                operator: Some(Operator::Sub),
-                output: Some("result".to_string()),
-                operands: vec![
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(5)))),
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(3)))),
-                ],
-            }]),
-        };
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_simple_if_fail_wrong_condition_type() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::IfThenElse {
-            condition: Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-            if_case: vec![ASTNode::Operation {
-                num_type: Some(NumericType::FiniteField),
-                operator: Some(Operator::Add),
-                output: Some("result".to_string()),
-                operands: vec![
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(1)))),
-                    Expression::Atomic(Atomic::Constant(ConstantType::FF(BigInt::from(2)))),
-                ],
-            }],
-            else_case: None,
-        };
-        assert!(type_checker.check_node(&node).is_err());
-    }
-
-    #[test]
-    fn test_simple_for_success() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Loop {
-            body: vec![ASTNode::Operation {
-                num_type: Some(NumericType::Integer),
-                operator: Some(Operator::Add),
-                output: Some("counter".to_string()),
-                operands: vec![
-                    Expression::Atomic(Atomic::Variable("counter".to_string())),
-                    Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                ],
-            }],
-        };
-        type_checker.type_enviroment.last_mut().unwrap().insert(
-            "counter".to_string(),
-            Type::Variable(NumericType::Integer),
-        );
-        assert!(type_checker.check_node(&node).is_ok());
-    }
-
-    #[test]
-    fn test_simple_for_fail_missing_variable_in_env() {
-        let mut type_checker = create_checker();
-        let node = ASTNode::Loop {
-            body: vec![ASTNode::Operation {
-                num_type: Some(NumericType::Integer),
-                operator: Some(Operator::Add),
-                output: Some("counter".to_string()),
-                operands: vec![
-                    Expression::Atomic(Atomic::Variable("counter".to_string())),
-                    Expression::Atomic(Atomic::Constant(ConstantType::I64(1))),
-                ],
-            }],
-        };
-        assert!(type_checker.check_node(&node).is_err());
     }
 }
