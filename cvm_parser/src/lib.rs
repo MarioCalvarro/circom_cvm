@@ -106,7 +106,8 @@ fn parse_function(input: &str) -> IResult<&str, Function> {
 }
 
 fn parse_id_template(input: &str) -> Result<usize, nom::Err<nom::error::Error<&str>>> {
-    let (_, id) = preceded(preceded(alphanumeric1, tag("_")), usize).parse(input)?;
+    let (input, _) = many0(complete(preceded(alphanumeric1, tag("_")))).parse(input)?;
+    let (_, id) = usize(input)?;
     Ok(id)
 }
 
@@ -269,7 +270,7 @@ pub fn parse_program(input: &str) -> IResult<&str, AST> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, path::Path};
 
     use cfg_ssa::types::{Atomic, ConstantType, Expression, NumericType, Operator};
     use std::io::Write;
@@ -391,6 +392,12 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_id_template_2() {
+        let input = "template_alfa_23_20";
+        assert_eq!(parse_id_template(input), Ok(20));
+    }
+
+    #[test]
     fn test_parse_template() {
         let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n x = ff.add y z\n ;;Me jodes?\n loop\n ;;Y tu?\n y = ff.mul x z\n end\n if condition\n  z = ff.sub x y\n else\n  z = ff.div x y\n end\n";
         let res = parse_template(input);
@@ -455,9 +462,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_loop2() {
-        // let input = "if x_1\n z = y\n if x_23\n x = y\n end\n y = x\n end";
-        // let input = "if x_1\nx_23 = ff.eqz x_22\nif x_23\nerror 0\nend\nff.store i64.3 x_37\ncontinue\nend";
+    fn test_parse_if2() {
         let input = "if x_23\n error 0\nend";
         let res = parse_if_then_else(input);
         println!("{:?}", res);
@@ -471,5 +476,61 @@ mod tests {
         let mut file = fs::File::create("test/output.txt").unwrap();
         writeln!(file, "{:?}", res).unwrap();
         assert!(res.is_ok());
+    }
+
+
+    #[test]
+    fn test_parse_compiled_files() {
+        let compiled_folder = Path::new("./test/compiled/");
+    
+        // Process a single file: read, parse, and type check.
+        fn process_file(path: &Path) -> bool {
+            let content = match fs::read_to_string(path) {
+                Ok(content) => content,
+                Err(e) => {
+                    eprintln!("Failed to read file {:?}: {:?}", path, e);
+                    return false;
+                }
+            };
+    
+            match parse_program(&content) {
+                Ok((_, parsed)) => {
+                    println!("Parsed successfully: {:?}", path);
+                    let output_path = Path::new("./test/outputs/").join(path.file_name().unwrap());
+                    let mut output_file = fs::File::create(output_path).unwrap();
+                    writeln!(output_file, "{:?}", parsed).unwrap();
+                    true
+                }
+                Err(e) => {
+                    eprintln!("Parsing failed for file {:?}", path);
+                    let error_file_name = format!("./test/outputs/{}_error.txt", path.file_name().unwrap().to_string_lossy());
+                    let mut error_file = fs::File::create(error_file_name).unwrap();
+                    writeln!(error_file, "Parsing failed for file {:?}: {:?}", path, e).unwrap();
+                    false
+                }
+            }
+        }
+    
+        // Recursively process all files in the directory.
+        fn process_directory(dir: &Path) -> bool {
+            let mut res = true;
+            for entry in fs::read_dir(dir).unwrap_or_else(|e| {
+                panic!("Failed to read directory {:?}: {:?}", dir, e);
+            }) {
+                let entry = entry.expect("Failed to read directory entry");
+                let path = entry.path();
+                if path.is_dir() {
+                    process_directory(&path);
+                } else if path.is_file() {
+                    if let false = process_file(&path) {
+                        res = false;
+                    }
+                }
+            }
+
+            res
+        }
+    
+        assert!(process_directory(compiled_folder));
     }
 }
