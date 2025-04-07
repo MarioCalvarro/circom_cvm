@@ -69,6 +69,11 @@ impl TypeChecker {
             function_env.insert(output.clone(), Type::Variable(output_type));
         }
 
+        // Add the predefined registers
+        // TODO: Move this to the creation of the function?
+        function_env.insert("destination".to_string(), Type::Variable(NumericType::Integer));
+        function_env.insert("destination_size".to_string(), Type::Variable(NumericType::Integer));
+
         self.type_enviroment.push(function_env);
 
         for node in &function.body {
@@ -307,6 +312,11 @@ impl TypeChecker {
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::Integer)?;
                         var_type = Type::Variable(NumericType::Integer);
+                    }
+                    Some(Operator::Return) => {
+                        check_len(2)?;
+                        check_operand(0, NumericType::Integer)?;
+                        check_operand(1, NumericType::Integer)?;
                     }
                     Some(_) => {
                         return Err(format!(
