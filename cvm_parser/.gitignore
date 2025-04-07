@@ -1,1 +1,3 @@
 test/output.txt
+test/compiled/*
+test/outputs/*
