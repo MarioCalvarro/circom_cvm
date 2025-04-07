@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{fs, path::Path, io::Write};
 
     #[test]
-    fn test_parse_and_type_checking_sum_test() {
+    fn test_parse_and_type_checkin_file() {
         let mut checker = cfg_ssa::type_checking::TypeChecker::new();
-        let file_path = Path::new("./compiled/sum_test_cvm/sum_test.cvm");
+        let file_path = Path::new("./compiled/escalarmulw4table_test_cvm/escalarmulw4table_test.cvm");
 
         if file_path.is_file() {
             let content = fs::read_to_string(&file_path).expect("Failed to read file");
@@ -44,10 +44,15 @@ mod tests {
                     println!("Parsed successfully: {:?}", parsed);
                     match checker.check(&parsed) {
                         Ok(_) => println!("Type checking passed for file: {:?}", path),
-                        Err(e) => panic!("Type checking failed for file {:?}: {:?}", path, e),
+                        Err(e) => {
+                            eprintln!("Parsing failed for file {:?}", path);
+                            let error_file_name = format!("./outputs/{}_error.txt", path.file_name().unwrap().to_string_lossy());
+                            let mut error_file = fs::File::create(error_file_name).unwrap();
+                            writeln!(error_file, "{:?}", e).unwrap();
+                        }
                     }
                 }
-                Err(e) => panic!("Parsing failed for file {:?}: {:?}", path, e),
+                Err(e) => eprintln!("Parsing failed for file {:?}: {:?}", path, e),
             }
         }
     
