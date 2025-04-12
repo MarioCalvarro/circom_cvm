@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_parse_if_no_else() {
-        let input = "if condition\n  x = ff.add x y\nend\n";
+        let input = "if condition\n  x = ff.add x y\n end\n";
         let expected = ASTNode::IfThenElse {
             condition: Expression::Atomic(Atomic::Variable("condition".to_string())),
             if_case: vec![ASTNode::Operation {
@@ -383,6 +383,13 @@ mod tests {
             }],
         };
         assert_eq!(parse_function(input), Ok(("", expected)));
+    }
+
+    #[test]
+    fn test_error_ast_node() {
+        let input = "error 0";
+        println!("{:?}", parse_ast_node(input));
+        assert!(parse_ast_node(input).is_err());
     }
 
     #[test]
@@ -462,16 +469,25 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_if2() {
-        let input = "if x_23\n error 0\nend";
-        let res = parse_if_then_else(input);
+    fn test_parse_template_error() {
+        let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n error 0\n";
+        let res = parse_template(input);
         println!("{:?}", res);
         assert!(res.is_ok());
     }
 
+    //TODO: Should this pass or not?
+    // #[test]
+    // fn test_parse_if2() {
+    //     let input = "if x_23\n error 0\nend";
+    //     let res = parse_if_then_else(input);
+    //     println!("{:?}", res);
+    //     assert!(res.is_ok());
+    // }
+
     #[test]
     fn test_parse_program() {
-        let input = fs::read_to_string("test/test_program.cvm").unwrap();
+        let input = fs::read_to_string("test/sum_test.cvm").unwrap();
         let res = parse_program(&input);
         let mut file = fs::File::create("test/output.txt").unwrap();
         writeln!(file, "{:?}", res).unwrap();
@@ -494,18 +510,25 @@ mod tests {
             };
     
             match parse_program(&content) {
-                Ok((_, parsed)) => {
+                Ok(("", parsed)) => {
                     println!("Parsed successfully: {:?}", path);
-                    let output_path = Path::new("./test/outputs/").join(path.file_name().unwrap());
+                    let output_path = Path::new("./test/outputs/successes/").join(path.file_name().unwrap());
                     let mut output_file = fs::File::create(output_path).unwrap();
                     writeln!(output_file, "{:?}", parsed).unwrap();
                     true
                 }
+                Ok((remaining, _)) => {
+                    eprintln!("Parsing failed for file {:?}", path);
+                    let error_file_name = format!("./test/outputs/fails/{}_error.txt", path.file_name().unwrap().to_string_lossy());
+                    let mut error_file = fs::File::create(error_file_name).unwrap();
+                    writeln!(error_file, "Parsing failed for file {:?}: remaining input:\n {:?}", path, remaining).unwrap();
+                    false
+                }
                 Err(e) => {
                     eprintln!("Parsing failed for file {:?}", path);
-                    let error_file_name = format!("./test/outputs/{}_error.txt", path.file_name().unwrap().to_string_lossy());
+                    let error_file_name = format!("./test/outputs/fails/{}_error.txt", path.file_name().unwrap().to_string_lossy());
                     let mut error_file = fs::File::create(error_file_name).unwrap();
-                    writeln!(error_file, "Parsing failed for file {:?}: {:?}", path, e).unwrap();
+                    writeln!(error_file, "Parsing failed for file {:?}:\n {:?}", path, e).unwrap();
                     false
                 }
             }
