@@ -92,7 +92,7 @@ impl TypeChecker {
                 self.check_operation(num_type, operator, output, operands)
             },
             ASTNode::IfThenElse { condition, if_case, else_case } => {
-                //Check if the condition is an integer, error otherwise
+                // TODO: Check if the condition is an integer, error otherwise?
                 // self.type_expression(condition)?;
                 // if self.type_expression(condition)? != Type::Variable(NumericType::Integer) {
                 //     return Err("Condition must be an integer".to_string());

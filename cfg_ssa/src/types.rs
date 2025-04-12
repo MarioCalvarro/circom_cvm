@@ -9,12 +9,14 @@ pub enum NumericType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
+    //TODO: Change in the future, identifiers are not i64 (cannot be used to sum)
     Variable(NumericType),
     Function(Vec<NumericType>, Vec<NumericType>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operator {
+    //TODO: There are more operations
     //Arithmetic
     Add,
     Sub,
@@ -90,6 +92,8 @@ pub enum Atomic {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Parameter {
+    //TODO: Not index is number of dimensions and length of each
+    //Change second to vector of size first
     Signal {
         index: Atomic,
         size: Atomic,

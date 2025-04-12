@@ -23,10 +23,11 @@ pub struct AST {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Function {
+    //TODO: id
     pub name: String,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
-    pub local_memory: usize,
+    pub local_memory: usize, //TODO: Change name to size
     pub body: Vec<ASTNode>,
 }
 
