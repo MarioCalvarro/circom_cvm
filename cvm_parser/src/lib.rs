@@ -1,7 +1,18 @@
 extern crate num_bigint_dig as num_bigint;
 
 use nom::{
-    branch::alt, bytes::tag, character::{complete::{alphanumeric1, multispace1, none_of, satisfy, space0, usize}, streaming::space1}, combinator::{complete, map, opt, recognize, value}, multi::{many0, separated_list0}, sequence::{delimited, pair, preceded}, IResult, Parser
+    branch::alt,
+    bytes::tag,
+    character::{
+        complete::{alphanumeric1, multispace1, none_of, satisfy, space0, usize,},
+        streaming::space1,
+    },
+    combinator::{complete, eof, map, opt, peek, recognize, value,},
+    multi::{many0, many_till, separated_list0,},
+    sequence::{
+        delimited, pair, preceded,
+    },
+    IResult, Parser,
 };
 use cfg_ssa::ast::*;
 
@@ -94,7 +105,7 @@ fn parse_function(input: &str) -> IResult<&str, Function> {
 
     let (input, local_memory) = parse_local_memory(input)?;
 
-    let (input, body) = many0(parse_ast_node).parse(input)?;
+    let (input, (body, _)) = many_till(parse_ast_node, alt((peek(eof), peek(tag("%%"))))).parse(input)?;
 
     Ok((input, Function {
         name,
@@ -145,7 +156,7 @@ fn parse_template(input: &str) -> IResult<&str, Template> {
     delimited(space0, separated_list0(space1, usize), space0),
     tag("]")).parse(input)?;
 
-    let (input, body) = many0(parse_ast_node).parse(input)?;
+    let (input, (body, _)) = many_till(parse_ast_node, alt((peek(eof), peek(tag("%%"))))).parse(input)?;
 
     Ok((input, Template {
         id,
@@ -184,7 +195,7 @@ fn parse_ast_field(input: &str) -> IResult<&str, ASTField> {
 }
 
 pub fn parse_program(input: &str) -> IResult<&str, AST> {
-    let (remaining_input, fields) = many0(parse_ast_field).parse(input)?;
+    let (remaining_input, (fields, _)) = many_till(parse_ast_field, eof).parse(input)?;
 
     // Temporary storage for each field
     let mut field_opt: Option<BigInt> = None;
@@ -473,17 +484,16 @@ mod tests {
         let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n error 0\n";
         let res = parse_template(input);
         println!("{:?}", res);
-        assert!(res.is_ok());
+        assert!(res.is_err());
     }
 
-    //TODO: Should this pass or not?
-    // #[test]
-    // fn test_parse_if2() {
-    //     let input = "if x_23\n error 0\nend";
-    //     let res = parse_if_then_else(input);
-    //     println!("{:?}", res);
-    //     assert!(res.is_ok());
-    // }
+    #[test]
+    fn test_parse_if2() {
+        let input = "loop \n error 0\nend";
+        let res = parse_loop(input);
+        println!("{:?}", res);
+        assert!(res.is_err());
+    }
 
     #[test]
     fn test_parse_program() {

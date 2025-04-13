@@ -8,10 +8,10 @@ use crate::parse_variable_name;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1, i64, space0},
-    combinator::{map, opt, value},
-    multi::separated_list0,
-    sequence::{delimited, separated_pair},
+    character::complete::{digit1, i64, newline, space0},
+    combinator::{eof, map, opt, peek, value},
+    multi::many_till,
+    sequence::{delimited, separated_pair, terminated},
     IResult, Parser,
 };
 
@@ -166,7 +166,13 @@ fn parse_operation_no_output(input: &str) -> IResult<&str, ASTNode> {
 
     let (input, operator) = parse_operator(input)?;
     let (input, _) = space0(input)?;
-    let (input, operands) = separated_list0(space0, parse_expression).parse(input)?;
+    let (input, (operands, _)) = many_till(
+        terminated(parse_expression, space0),
+        alt((
+            map(newline, |_| ()),
+            map(peek(eof), |_| ()),
+        )),
+    ).parse(input)?;
 
     Ok((
         input,
@@ -190,8 +196,13 @@ fn parse_operation_with_output(input: &str) -> IResult<&str, ASTNode> {
 
     let (input, operator) = parse_operator(input)?;
     let (input, _) = space0(input)?;
-    let (input, operands) = separated_list0(space0, parse_expression).parse(input)?;
-
+    let (input, (operands, _)) = many_till(
+        terminated(parse_expression, space0),
+        alt((
+            map(newline, |_| ()),
+            map(peek(eof), |_| ()),
+        )),
+    ).parse(input)?;
     Ok((
         input,
         ASTNode::Operation {
@@ -409,21 +420,7 @@ mod tests {
                 }
             ))
         );
-        // TODO: Should this fail or not?
-        assert_eq!(
-            parse_operation_no_output("error 0"),
-            Ok((
-                "",
-                ASTNode::Operation {
-                    num_type: None,
-                    operator: Some(Operator::Error),
-                    output: None,
-                    operands: vec![
-                        Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
-                    ]
-                }
-            ))
-        );
+        assert!(parse_operation_no_output("error 0").is_err());
         assert_eq!(
             parse_operation_no_output("get_signal i64.42 test"),
             Ok((
