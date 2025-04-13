@@ -7,7 +7,7 @@ use nom::{
         complete::{alphanumeric1, multispace1, none_of, satisfy, space0, usize,},
         streaming::space1,
     },
-    combinator::{complete, eof, map, opt, peek, recognize, value,},
+    combinator::{complete, cut, eof, map, opt, peek, recognize, value},
     multi::{many0, many_till, separated_list0,},
     sequence::{
         delimited, pair, preceded,
@@ -46,21 +46,27 @@ fn parse_useless(input: &str) -> IResult<&str, ()> {
     Ok((input, ()))
 }
 
-fn parse_loop(input: &str) -> IResult<&str, ASTNode> {
-    let (input, _) = tag("loop").parse(input)?;
+fn parse_loop_aux(input: &str) -> IResult<&str, ASTNode> {
     let (input, body) = many0(parse_ast_node).parse(input)?;
     let (input, _) = tag("end").parse(input)?;
     Ok((input, ASTNode::Loop {body}))
 }
 
-fn parse_if_then_else(input: &str) -> IResult<&str, ASTNode> {
-    let (input, _) = tag("if").parse(input)?;
+fn parse_loop(input: &str) -> IResult<&str, ASTNode> {
+    preceded(tag("loop"), cut(parse_loop_aux)).parse(input)
+}
+
+fn parse_if_then_else_aux(input: &str) -> IResult<&str, ASTNode> {
     let (input, _) = space1(input)?;
     let (input, condition) = parse_expression(input)?;
     let (input, if_case) = many0(parse_ast_node).parse(input)?;
     let (input, else_case) = opt(preceded(tag("else"), many0(parse_ast_node))).parse(input)?;
     let (input, _) = tag("end").parse(input)?;
     Ok((input, ASTNode::IfThenElse {condition, if_case, else_case}))
+}
+
+fn parse_if_then_else(input: &str) -> IResult<&str, ASTNode> {
+    preceded(tag("if"), cut(parse_if_then_else_aux)).parse(input)
 }
 
 fn parse_break(input: &str) -> IResult<&str, ASTNode> {
@@ -75,7 +81,12 @@ fn parse_ast_node(input: &str) -> IResult<&str, ASTNode> {
     //Delimited by useless to avoid parsing comments and whitespaces
     complete(delimited(
      parse_useless,
-     alt((parse_if_then_else, parse_loop, parse_break, parse_continue, parse_operation)),
+     alt((
+             parse_if_then_else,
+             parse_loop,
+             parse_break,
+             parse_continue,
+             parse_operation)),
      parse_useless
     )).parse(input)
 }
@@ -481,7 +492,7 @@ mod tests {
 
     #[test]
     fn test_parse_template_error() {
-        let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n error 0\n";
+        let input = "%%template template_0 [output] [input1 input2] [10] [5 3 2]\n  ;; body\n loop\n x1 = ff.add i64.0 i64.2 \n error 0\n end\n \n";
         let res = parse_template(input);
         println!("{:?}", res);
         assert!(res.is_err());
@@ -489,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_parse_if2() {
-        let input = "loop \n error 0\nend";
+        let input = "loop\n x1 = i64.0 \n error 0\nend";
         let res = parse_loop(input);
         println!("{:?}", res);
         assert!(res.is_err());
