@@ -7,6 +7,7 @@ use cfg_ssa::ast::*;
 
 mod initial_parsers;
 mod operation_parsers;
+mod token;
 use initial_parsers::*;
 use num_bigint::BigInt;
 use operation_parsers::{parse_expression, parse_operation};
