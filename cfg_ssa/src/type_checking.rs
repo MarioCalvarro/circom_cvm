@@ -177,7 +177,7 @@ impl TypeChecker {
                         | Some(Operator::Equal) | Some(Operator::NotEqual)
                         | Some(Operator::And) | Some(Operator::Or) | Some(Operator::BitAnd)
                         | Some(Operator::BitOr) | Some(Operator::BitXor)
-                        | Some(Operator::ShiftLeft) | Some(Operator::ShiftRight) 
+                        | Some(Operator::ShiftLeft) | Some(Operator::ShiftRight)
                     => {
                         check_len(2)?;
                         check_operand(0, NumericType::FiniteField)?;
@@ -196,8 +196,14 @@ impl TypeChecker {
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::FiniteField)?;
                     }
+                    Some(Operator::MStore) | Some(Operator::MStoreFromSignal) | Some(Operator::MStoreFromCmpSignal) => {
+                        check_len(3)?;
+                        check_operand(0, NumericType::Integer)?;
+                        check_operand(1, NumericType::Integer)?;
+                        check_operand(2, NumericType::Integer)?;
+                    }
                     Some(Operator::Call) => {
-                        self.check_call(operator, operands, NumericType::FiniteField)?;
+                        self.check_call(operator, operands, Some(NumericType::FiniteField))?;
                     }
                     Some(Operator::Wrap) => {
                         check_len(1)?;
@@ -209,8 +215,16 @@ impl TypeChecker {
                     }
                     Some(Operator::GetSignal) | Some(Operator::GetCmpSignal) | Some(Operator::SetSignal)
                         | Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun)
-                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
-                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::Error) 
+                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::Error) | Some(Operator::MSetSignal)
+                        | Some(Operator::MSetSignalFromMemory) | Some(Operator::MSetCmpIn) | Some(Operator::MSetCmpInCnt)
+                        | Some(Operator::MSetCmpInRun) | Some(Operator::MSetCmpInCntCheck) | Some(Operator::MSetCmpInFromCmp)
+                        | Some(Operator::MSetCmpInFromCmpCnt) | Some(Operator::MSetCmpInFromCmpRun) | Some(Operator::MSetCmpInFromCmpCntCheck)
+                        | Some(Operator::MSetCmpInFromMemory) | Some(Operator::MSetCmpInFromMemoryCnt)| Some(Operator::MSetCmpInFromMemoryRun)
+                        | Some(Operator::MSetCmpInFromMemoryCntCheck)
+                        | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
+                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::GetTemplateSignalDim) | Some(Operator::GetTemplateSignalType)
+                        | Some(Operator::GetBusSignalPos) | Some(Operator::GetBusSignalSize)
+                        | Some(Operator::GetBusSignalDim) | Some(Operator::GetBusSignalType)
                     => {
                         return Err(format!(
                             "Operator {:?} must not have a type", operator
@@ -248,20 +262,29 @@ impl TypeChecker {
                         check_operand(0, NumericType::Integer)?;
                     }
                     Some(Operator::Call) => {
-                        self.check_call(operator, operands, NumericType::Integer)?;
+                        self.check_call(operator, operands, Some(NumericType::Integer))?;
                     }
                     Some(Operator::Extend) => {
                         check_len(1)?;
                         check_operand(0, NumericType::Integer)?;
                         var_type = Type::Variable(NumericType::FiniteField);
                     }
-                    Some(Operator::Wrap) => {
+                    Some(Operator::Wrap) | Some(Operator::MStore) | Some(Operator::MStoreFromSignal)
+                    | Some(Operator::MStoreFromCmpSignal) => {
                         return Err("Wrap operator must have type Finite Field".to_string());
                     }
                     Some(Operator::GetSignal) | Some(Operator::GetCmpSignal) | Some(Operator::SetSignal)
                         | Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun)
-                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
-                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::Error)
+                        | Some(Operator::SetCmpInCntCheck) | Some(Operator::Error) | Some(Operator::MSetSignal)
+                        | Some(Operator::MSetSignalFromMemory) | Some(Operator::MSetCmpIn) | Some(Operator::MSetCmpInCnt)
+                        | Some(Operator::MSetCmpInRun) | Some(Operator::MSetCmpInCntCheck) | Some(Operator::MSetCmpInFromCmp)
+                        | Some(Operator::MSetCmpInFromCmpCnt) | Some(Operator::MSetCmpInFromCmpRun) | Some(Operator::MSetCmpInFromCmpCntCheck)
+                        | Some(Operator::MSetCmpInFromMemory) | Some(Operator::MSetCmpInFromMemoryCnt)| Some(Operator::MSetCmpInFromMemoryRun)
+                        | Some(Operator::MSetCmpInFromMemoryCntCheck)
+                        | Some(Operator::GetTemplateId) | Some(Operator::GetTemplateSignalPosition)
+                        | Some(Operator::GetTemplateSignalSize) | Some(Operator::GetTemplateSignalDim) | Some(Operator::GetTemplateSignalType)
+                        | Some(Operator::GetBusSignalPos) | Some(Operator::GetBusSignalSize)
+                        | Some(Operator::GetBusSignalDim) | Some(Operator::GetBusSignalType)
                     => {
                         return Err(format!(
                             "Operator {:?} must not have a type", operator
@@ -291,15 +314,16 @@ impl TypeChecker {
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::Integer)?;
                     }
-                    Some(Operator::GetTemplateId) => {
-                        check_len(1)?;
-                        check_operand(0, NumericType::Integer)?;
-                        var_type = Type::Variable(NumericType::Integer);
-                    }
                     Some(Operator::SetSignal) => {
                         check_len(2)?;
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::FiniteField)?;
+                    }
+                    Some(Operator::MSetSignal) | Some(Operator::MSetSignalFromMemory) => {
+                        check_len(3)?;
+                        check_operand(0, NumericType::Integer)?;
+                        check_operand(1, NumericType::Integer)?;
+                        check_operand(2, NumericType::Integer)?;
                     }
                     Some(Operator::SetCmpIn) | Some(Operator::SetCmpInCnt) | Some(Operator::SetCmpInRun) | Some(Operator::SetCmpInCntCheck) => {
                         check_len(3)?;
@@ -307,19 +331,58 @@ impl TypeChecker {
                         check_operand(1, NumericType::Integer)?;
                         check_operand(2, NumericType::FiniteField)?;
                     }
-                    Some(Operator::GetTemplateSignalSize) | Some(Operator::GetTemplateSignalPosition) => {
+                    Some(Operator::MSetCmpIn) | Some(Operator::MSetCmpInCnt) | Some(Operator::MSetCmpInRun) | Some(Operator::MSetCmpInCntCheck)
+                    | Some(Operator::MSetCmpInFromMemory) | Some(Operator::MSetCmpInFromMemoryCnt) | Some(Operator::MSetCmpInFromMemoryRun) | Some(Operator::MSetCmpInFromMemoryCntCheck) 
+                    => {
+                        check_len(4)?;
+                        check_operand(0, NumericType::Integer)?;
+                        check_operand(1, NumericType::Integer)?;
+                        check_operand(2, NumericType::Integer)?;
+                        check_operand(3, NumericType::Integer)?;
+                    }
+                    Some(Operator::MSetCmpInFromCmp) | Some(Operator::MSetCmpInFromCmpCnt) | Some(Operator::MSetCmpInFromCmpRun) | Some(Operator::MSetCmpInFromCmpCntCheck) => {
+                        check_len(5)?;
+                        check_operand(0, NumericType::Integer)?;
+                        check_operand(1, NumericType::Integer)?;
+                        check_operand(2, NumericType::Integer)?;
+                        check_operand(3, NumericType::Integer)?;
+                        check_operand(4, NumericType::Integer)?;
+                    }
+                    Some(Operator::GetTemplateId) => {
+                        check_len(1)?;
+                        check_operand(0, NumericType::Integer)?;
+                        var_type = Type::Variable(NumericType::Integer);
+                    }
+                    Some(Operator::GetTemplateSignalSize) | Some(Operator::GetTemplateSignalPosition)
+                    | Some(Operator::GetTemplateSignalDim) | Some(Operator::GetTemplateSignalType)
+                    | Some(Operator::GetBusSignalPos) | Some(Operator::GetBusSignalSize)
+                    | Some(Operator::GetBusSignalDim) | Some(Operator::GetBusSignalType)
+                     => {
                         check_len(2)?;
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::Integer)?;
                         var_type = Type::Variable(NumericType::Integer);
+                    }
+                    Some(Operator::Call) => {
+                        self.check_call(operator, operands, None)?;
                     }
                     Some(Operator::Return) => {
                         check_len(2)?;
                         check_operand(0, NumericType::Integer)?;
                         check_operand(1, NumericType::Integer)?;
                     }
-                    Some(_) => {
-                        return Err(format!(
+                    Some(Operator::Add) | Some(Operator::Sub) | Some(Operator::Mul)
+                    | Some(Operator::Div) | Some(Operator::Rem) | Some(Operator::IDiv)
+                    | Some(Operator::Pow) | Some(Operator::Greater) | Some(Operator::GreaterEqual)
+                    | Some(Operator::Less) | Some(Operator::LessEqual) | Some(Operator::Equal)
+                    | Some(Operator::NotEqual) | Some(Operator::EqualZero) | Some(Operator::And)
+                    | Some(Operator::Or) | Some(Operator::ShiftRight) | Some(Operator::ShiftLeft)
+                    | Some(Operator::BitAnd) | Some(Operator::BitOr) | Some(Operator::BitXor)
+                    | Some(Operator::BitNot) | Some(Operator::Extend) | Some(Operator::Wrap)
+                    | Some(Operator::Load) | Some(Operator::Store) | Some(Operator::MStore)
+                    | Some(Operator::MStoreFromSignal) | Some(Operator::MStoreFromCmpSignal)
+                    => {
+                    return Err(format!(
                                 "Operator {:?} requires a numeric type, but none was provided.",
                                 operator
                         ));
@@ -357,19 +420,26 @@ impl TypeChecker {
         Ok(())
     }
 
-    fn check_call(&mut self, operator: &Option<Operator>, operands: &[Expression], expected_type: NumericType) -> Result<(), String> {
+    fn check_call(&mut self, operator: &Option<Operator>, operands: &[Expression], expected_type: Option<NumericType>) -> Result<(), String> {
         if !operands.is_empty() {
             return Err(format!(
                     "Operator {:?} requires at least a function to call, but none was provided.",
                     operator,
             ));
         }
+
+        // Check if the first operand is a function name
         if let Some(Expression::Atomic(Atomic::Variable(name))) = operands.first() {
+            //TODO: Remove the first character of the name (which is a '$')?
             let name = &name[1..];
+
+            //Find the function in the environment
             let function_type = self.type_enviroment.iter().rev()
                 .find_map(|env| env.get(name))
                 .ok_or(format!("Function {} not found in environment", name))?;
             if let Type::Function(input_types, output_types) = function_type {
+                // Check if the number of operands matches the number of input types
+                // The first operand is the function name, so we skip it
                 if input_types.len() != operands.len() - 1 {
                     return Err(format!(
                             "Function {} requires {} inputs, but {} were provided.",
@@ -378,6 +448,9 @@ impl TypeChecker {
                             operands.len() - 1
                     ));
                 }
+
+                // Check if the types of the operands match the types of the inputs
+                // The first operand is the function name, so we skip it
                 for (operand, param) in operands.iter().skip(1).zip(input_types) {
                     if self.type_expression(operand)? != Type::Variable(param.clone()) {
                         return Err(format!(
@@ -394,24 +467,39 @@ impl TypeChecker {
                             name,
                     ));
                 }
+
+                // Check if the output type matches the expected type
                 if let Some(output_type) = output_types.first() {
-                    if *output_type != expected_type {
+                    if let Some(expected) = expected_type {
+                        //Output type in definition and in call, but not equal
+                        if *output_type != expected {
+                            return Err(format!(
+                                    "Function {} must output a {:?}, but it does not.",
+                                    name, expected
+                            ));
+                        }
+                    } else {
+                        //Output type in definition, but not in call
                         return Err(format!(
-                                "Function {} must output a {:?}, but it does not.",
-                                name, expected_type
+                                "Function {} must output a type, but none was provided.",
+                                name
                         ));
                     }
-                } else {
+                }
+                else if let Some(expected) = expected_type {
+                    //Output type in call, but not in definition
                     return Err(format!(
                             "Function {} must output a {:?}, but it does not.",
-                            name, expected_type
+                            name, expected
                     ));
                 }
             } else {
+                //The first operand is not an identifier of a function
                 return Err(format!("{} is not a function", name));
             }
         }
         else {
+            //The first operand is not an identifier
             return Err(format!(
                     "Operator {:?} requires a function to call, but none was provided.",
                     operator,

@@ -24,19 +24,48 @@ fn parse_operator(input: &str) -> IResult<&str, Operator> {
     alt([
         value(Operator::GetTemplateSignalPosition, tag("get_template_signal_position")),
         value(Operator::GetTemplateSignalSize, tag("get_template_signal_size")),
+        value(Operator::GetTemplateSignalDim, tag("get_template_signal_dimension")),
+        value(Operator::GetTemplateSignalType, tag("get_template_signal_type")),
         value(Operator::GetTemplateId, tag("get_template_id")),
 
+        value(Operator::GetBusSignalPos, tag("get_bus_signal_position")),
+        value(Operator::GetBusSignalSize, tag("get_bus_signal_size")),
+        value(Operator::GetBusSignalDim, tag("get_bus_signal_dimension")),
+        value(Operator::GetBusSignalType, tag("get_bus_signal_type")),
+
+
+        value(Operator::MSetCmpInFromMemoryCntCheck, tag("mset_cmp_input_from_memory_cnt_check")),
+        value(Operator::MSetCmpInFromMemoryRun, tag("mset_cmp_input_from_memory_run")),
+        value(Operator::MSetCmpInFromMemoryCnt, tag("mset_cmp_input_from_memory_cnt")),
+        value(Operator::MSetCmpInFromMemory, tag("mset_cmp_input_from_memory")),
+
+        value(Operator::MSetCmpInFromCmpCntCheck, tag("mset_cmp_input_from_cmp_cnt_check")),
+        value(Operator::MSetCmpInFromCmpRun, tag("mset_cmp_input_from_cmp_run")),
+        value(Operator::MSetCmpInFromCmpCnt, tag("mset_cmp_input_from_cmp_cnt")),
+        value(Operator::MSetCmpInFromCmp, tag("mset_cmp_input_from_cmp")),
+
+        value(Operator::MSetCmpInCntCheck, tag("mset_cmp_input_cnt_check")),
+        value(Operator::MSetCmpInRun, tag("mset_cmp_input_run")),
+        value(Operator::MSetCmpInCnt, tag("mset_cmp_input_cnt")),
+        value(Operator::MSetCmpIn, tag("mset_cmp_input")),
 
         value(Operator::SetCmpInCntCheck, tag("set_cmp_input_cnt_check")),
         value(Operator::SetCmpInCnt, tag("set_cmp_input_cnt")),
         value(Operator::SetCmpInRun, tag("set_cmp_input_run")),
         value(Operator::SetCmpIn, tag("set_cmp_input")),
         value(Operator::GetCmpSignal, tag("get_cmp_signal")),
+
+        value(Operator::MSetSignalFromMemory, tag("mset_signal_from_mem")),
+        value(Operator::MSetSignal, tag("mset_signal")),
         value(Operator::GetSignal, tag("get_signal")),
         value(Operator::SetSignal, tag("set_signal")),
 
+        value(Operator::MStoreFromSignal, tag("mstore_from_signal")),
+        value(Operator::MStoreFromCmpSignal, tag("mstore_from_cmp_signal")),
+
         value(Operator::Extend, tag("extend_ff")),
         value(Operator::Wrap, tag("wrap_i64")),
+        value(Operator::MStore, tag("mstore")),
         value(Operator::Load, tag("load")),
         value(Operator::Store, tag("store")),
         value(Operator::Return, tag("return")),
@@ -280,20 +309,48 @@ mod tests {
         assert_eq!(parse_operator("extend_ff"), Ok(("", Operator::Extend)));
         assert_eq!(parse_operator("wrap_i64"), Ok(("", Operator::Wrap)));
 
-        assert_eq!(parse_operator("load", ), Ok(("", Operator::Load)));
-        assert_eq!(parse_operator("store", ), Ok(("", Operator::Store)));
+        assert_eq!(parse_operator("load"), Ok(("", Operator::Load)));
+        assert_eq!(parse_operator("store"), Ok(("", Operator::Store)));
+        assert_eq!(parse_operator("mstore"), Ok(("", Operator::MStore)));
+        assert_eq!(parse_operator("mstore_from_signal"), Ok(("", Operator::MStoreFromSignal)));
+        assert_eq!(parse_operator("mstore_from_cmp_signal"), Ok(("", Operator::MStoreFromCmpSignal)));
 
         assert_eq!(parse_operator("get_signal"), Ok(("", Operator::GetSignal)));
-        assert_eq!(parse_operator("get_cmp_signal"), Ok(("", Operator::GetCmpSignal)));
         assert_eq!(parse_operator("set_signal"), Ok(("", Operator::SetSignal)));
+        assert_eq!(parse_operator("mset_signal_from_mem"), Ok(("", Operator::MSetSignalFromMemory)));
+        assert_eq!(parse_operator("mset_signal"), Ok(("", Operator::MSetSignal)));
+
+        assert_eq!(parse_operator("get_cmp_signal"), Ok(("", Operator::GetCmpSignal)));
         assert_eq!(parse_operator("set_cmp_input"), Ok(("", Operator::SetCmpIn)));
         assert_eq!(parse_operator("set_cmp_input_cnt"), Ok(("", Operator::SetCmpInCnt)));
         assert_eq!(parse_operator("set_cmp_input_run"), Ok(("", Operator::SetCmpInRun)));
         assert_eq!(parse_operator("set_cmp_input_cnt_check"), Ok(("", Operator::SetCmpInCntCheck)));
 
+        assert_eq!(parse_operator("mset_cmp_input_from_memory_cnt_check"), Ok(("", Operator::MSetCmpInFromMemoryCntCheck)));
+        assert_eq!(parse_operator("mset_cmp_input_from_memory_run"), Ok(("", Operator::MSetCmpInFromMemoryRun)));
+        assert_eq!(parse_operator("mset_cmp_input_from_memory_cnt"), Ok(("", Operator::MSetCmpInFromMemoryCnt)));
+        assert_eq!(parse_operator("mset_cmp_input_from_memory"), Ok(("", Operator::MSetCmpInFromMemory)));
+
+        assert_eq!(parse_operator("mset_cmp_input_from_cmp_cnt_check"), Ok(("", Operator::MSetCmpInFromCmpCntCheck)));
+        assert_eq!(parse_operator("mset_cmp_input_from_cmp_run"), Ok(("", Operator::MSetCmpInFromCmpRun)));
+        assert_eq!(parse_operator("mset_cmp_input_from_cmp_cnt"), Ok(("", Operator::MSetCmpInFromCmpCnt)));
+        assert_eq!(parse_operator("mset_cmp_input_from_cmp"), Ok(("", Operator::MSetCmpInFromCmp)));
+
+        assert_eq!(parse_operator("mset_cmp_input_cnt_check"), Ok(("", Operator::MSetCmpInCntCheck)));
+        assert_eq!(parse_operator("mset_cmp_input_run"), Ok(("", Operator::MSetCmpInRun)));
+        assert_eq!(parse_operator("mset_cmp_input_cnt"), Ok(("", Operator::MSetCmpInCnt)));
+        assert_eq!(parse_operator("mset_cmp_input"), Ok(("", Operator::MSetCmpIn)));
+
         assert_eq!(parse_operator("get_template_signal_position"), Ok(("", Operator::GetTemplateSignalPosition)));
         assert_eq!(parse_operator("get_template_signal_size"), Ok(("", Operator::GetTemplateSignalSize)));
         assert_eq!(parse_operator("get_template_id"), Ok(("", Operator::GetTemplateId)));
+        assert_eq!(parse_operator("get_template_signal_dimension"), Ok(("", Operator::GetTemplateSignalDim)));
+        assert_eq!(parse_operator("get_template_signal_type"), Ok(("", Operator::GetTemplateSignalType)));
+
+        assert_eq!(parse_operator("get_bus_signal_position"), Ok(("", Operator::GetBusSignalPos)));
+        assert_eq!(parse_operator("get_bus_signal_size"), Ok(("", Operator::GetBusSignalSize)));
+        assert_eq!(parse_operator("get_bus_signal_dimension"), Ok(("", Operator::GetBusSignalDim)));
+        assert_eq!(parse_operator("get_bus_signal_type"), Ok(("", Operator::GetBusSignalType)));
 
         assert_eq!(parse_operator("return"), Ok(("", Operator::Return)));
         assert_eq!(parse_operator("call"), Ok(("", Operator::Call)));
@@ -563,20 +620,6 @@ mod tests {
                 }
             ))
         );
-        //TODO: Should this fail or not?
-        // assert_eq!(
-        //     parse_operation("error 0"),
-        //     Ok((
-        //         "",
-        //         ASTNode::Operation {
-        //             num_type: None,
-        //             operator: Some(Operator::Error),
-        //             output: None,
-        //             operands: vec![
-        //                 Expression::Atomic(Atomic::Constant(ConstantType::I64(0))),
-        //             ]
-        //         }
-        //     ))
-        // );
+        assert!(parse_operation("error 0").is_err());
     }
 }

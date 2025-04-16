@@ -508,7 +508,7 @@ mod tests {
 
     #[test]
     fn test_parse_program() {
-        let input = fs::read_to_string("test/sum_test.cvm").unwrap();
+        let input = fs::read_to_string("test/test_program.cvm").unwrap();
         let res = parse_program(&input);
         let mut file = fs::File::create("test/output.txt").unwrap();
         writeln!(file, "{:?}", res).unwrap();

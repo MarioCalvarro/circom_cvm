@@ -54,15 +54,37 @@ pub enum Operator {
     //Memory
     Load,
     Store,
+     //Stores for ff only
+    MStore,
+    MStoreFromSignal,
+    MStoreFromCmpSignal,
 
     //Signal
     GetSignal,
     GetCmpSignal,
     SetSignal,
+    MSetSignal,
+    MSetSignalFromMemory,
+
     SetCmpIn,
     SetCmpInCnt,
     SetCmpInRun,
     SetCmpInCntCheck,
+
+    MSetCmpIn,
+    MSetCmpInCnt,
+    MSetCmpInRun,
+    MSetCmpInCntCheck,
+
+    MSetCmpInFromCmp,
+    MSetCmpInFromCmpCnt,
+    MSetCmpInFromCmpRun,
+    MSetCmpInFromCmpCntCheck,
+
+    MSetCmpInFromMemory,
+    MSetCmpInFromMemoryCnt,
+    MSetCmpInFromMemoryRun,
+    MSetCmpInFromMemoryCntCheck,
 
     //Functions
     Return,
@@ -72,6 +94,14 @@ pub enum Operator {
     GetTemplateId,
     GetTemplateSignalPosition,
     GetTemplateSignalSize,
+    GetTemplateSignalDim,
+    GetTemplateSignalType,
+
+    //Buses
+    GetBusSignalPos,
+    GetBusSignalSize,
+    GetBusSignalDim,
+    GetBusSignalType,
 
     //Misc
     Error,
